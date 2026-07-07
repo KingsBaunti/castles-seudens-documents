@@ -6,12 +6,14 @@ import com.castles.seudensdocuments.core.dto.StudentResponseDto;
 import com.castles.seudensdocuments.core.service.StudentService;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/students")
 @RequiredArgsConstructor
@@ -24,12 +26,9 @@ public class StudentController {
     //POST /api/students
     @PostMapping
     public ResponseEntity<StudentResponseDto> createStudent(@RequestBody StudentRequestDto requestDto) {
-        System.out.println("Received request: " + "\n"
-                + requestDto.getEmail() + "\n"
-                +requestDto.getEnrollmentDate());
+
         StudentResponseDto response = studentService.createStudent(requestDto);
-        System.out.println("Received request: " + "\n"
-                  +response.getEnrollmentDate());
+
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 

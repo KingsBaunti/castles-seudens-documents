@@ -2,7 +2,7 @@
 spring:
   datasource:
     #ссылка на БД в контейнере
-    url: jdbc:postgresql://localhost:5432/saga_main_bd
+    url: jdbc:postgresql://localhost:5433/students_documents_bd
     username: admin
     password: admin
     driver-class-name: org.postgresql.Driver
@@ -22,10 +22,21 @@ spring:
       #Формат SQL в логах
       format_sql: true
 
+
 logging:
   level:
-    com.castles.admanager.core: DEBUG
+    #Для написанного кода логирование максимальное
+    com.castles.seudensdocuments.core: TRACE
+    #В логах отображаем информацию о обработке спрингом HHTP запросов
     org.springframework.web: DEBUG
-    org.hibernate.SQL: DEBUG
-    org.hibernate.type.descriptor.sql.BasicBinder: trace
-    org.hibernate.orm.results.bind: trace
+    #Отображаем в логах SQL запросы к БД
+    org.hibernate.SQL: TRACE
+    #В SQL запросах к БД подставляем реальные значения вместо "?"
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.hibernate.type.descriptor.sql: TRACE
+    org.hibernate.orm.jdbc.bind: TRACE
+    #Отображаем в логах подробно результат мапинга из БД
+    org.hibernate.orm.results.bind: TRACE
+    #Отображаем в логах ResultSet
+    org.hibernate.orm.jdbc.extract: TRACE
+
