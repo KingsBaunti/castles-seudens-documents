@@ -8,152 +8,271 @@
     <artifactId>student-documents</artifactId>
     <version>1.0-SNAPSHOT</version>
 
+    <!--
+        Родительский Spring Boot POM:
+        - Задаёт версии Spring Boot и плагинов по умолчанию
+        - Позволяет не указывать версии для стартеров и большинства популярных библиотек
+    -->
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>3.4.11</version>
-        <relativePath/>
+        <relativePath/> <!-- Всегда ищем в репозитории, не в локальной файловой системе -->
     </parent>
 
+    <!--
+        Свойства проекта:
+        - Централизованное управление версиями для переопределяемых зависимостей
+    -->
     <properties>
+        <!-- Версия Java (используется компилятором и плагинами) -->
         <java.version>21</java.version>
-        <testcontainers.version>1.20.5</testcontainers.version>
+        <!-- Версия Testcontainers для всех модулей (управляется через BOM) -->
+        <testcontainers.version>1.20.6</testcontainers.version>
+        <!-- Версия Lombok для аннотационного процессора и зависимости -->
         <lombok.version>1.18.38</lombok.version>
+        <!-- Версия JUnit 5 (Jupiter) – используется BOM'ом -->
+        <junit.jupiter.version>5.11.4</junit.jupiter.version>
+        <!-- Версия MapStruct (общая для API и процессора) -->
+        <mapstruct.version>1.5.5.Final</mapstruct.version>
+        <!-- Версия связки Lombok-MapStruct (избавляет от конфликтов) -->
+        <lombok-mapstruct-binding.version>0.2.0</lombok-mapstruct-binding.version>
     </properties>
 
+    <!--
+        BOM-секция (Bill of Materials):
+        - Гарантирует совместимые версии для всех импортируемых групп зависимостей
+        - Избавляет от необходимости указывать версии у каждой зависимости отдельно
+    -->
+    <dependencyManagement>
+        <dependencies>
+            <!-- BOM для JUnit 5: управляет версиями Jupiter, Vintage, Platform и т.д. -->
+            <dependency>
+                <groupId>org.junit</groupId>
+                <artifactId>junit-bom</artifactId>
+                <version>${junit.jupiter.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <!--
+                BOM для Testcontainers:
+                - Управляет версиями всех модулей (core, junit-jupiter, postgresql и др.)
+                - Версия задана свойством testcontainers.version
+            -->
+            <dependency>
+                <groupId>org.testcontainers</groupId>
+                <artifactId>testcontainers-bom</artifactId>
+                <version>${testcontainers.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <dependencies>
+        <!-- Основные стартеры Spring Boot-->
+        <!-- Web-слой (REST, встроенный Tomcat, Jackson) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
+        <!-- Доступ к данным через JPA (Hibernate + Spring Data) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
 
+        <!-- Утилиты -->
+        <!-- MapStruct для преобразования сущностей (scope provided нужен только на этапе компиляции) -->
         <dependency>
             <groupId>org.mapstruct</groupId>
             <artifactId>mapstruct</artifactId>
-            <version>1.5.5.Final</version>
+            <version>${mapstruct.version}</version>
             <scope>provided</scope>
         </dependency>
 
-
+        <!-- Lombok: сокращает шаблонный код (геттеры, сеттеры, конструкторы и т.д.) -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <version>${lombok.version}</version>
             <scope>provided</scope>
         </dependency>
+
+        <!--
+            Связка Lombok и MapStruct:
+            - Гарантирует корректную совместную работу аннотационных процессоров
+            - Должна быть объявлена как provided, но добавлена в annotationProcessorPaths (см. ниже)
+        -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok-mapstruct-binding</artifactId>
-            <version>0.2.0</version>
+            <version>${lombok-mapstruct-binding.version}</version>
             <scope>provided</scope>
         </dependency>
-        <!--Задача 0. Добавлен драйвер для PostgreSQL-->
+
+        <!-- База данных -->
+        <!-- Драйвер PostgreSQL (runtime – нужен только во время выполнения) -->
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
         </dependency>
+
+        <!-- Инструментарий -->
+        <!--
+            Аннотационный процессор Spring Boot:
+            - Генерирует метаданные для @ConfigurationProperties, улучшая автодополнение в IDE
+        -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-configuration-processor</artifactId>
             <scope>annotationProcessor</scope>
         </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-devtools</artifactId>
-            <scope>runtime</scope>
-        </dependency>
+
+        <!--
+            Spring Boot Docker Compose:
+            - Автоматически запускает описанные в docker-compose.yml сервисы при старте приложения
+            - Полезно для локальной разработки
+        -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-docker-compose</artifactId>
             <scope>runtime</scope>
         </dependency>
-        <!--SLF4J для лооггирования-->
+
+        <!--
+            Логирование:
+            - Logback – стандартная реализация SLF4J в Spring Boot
+            - Явное указание версии переопределяет управляемую версию из spring-boot-starter-parent
+              (1.5.16 может быть новее, чем в Spring Boot 3.4.11; при проблемах совместимости удалите <version>)
+        -->
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
             <version>1.5.16</version>
         </dependency>
 
-        <!--тестирование-->
+        <!-- Тестирование -->
+        <!--
+            Основной стартер для тестов Spring Boot:
+            - Включает JUnit Jupiter (управляемый BOM'ом), Mockito, Hamcrest, Spring Test и т.д.
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!--
+            Testcontainers – ядро (версия управляется BOM'ом):
+            - Предоставляет легковесные throwaway-контейнеры для интеграционных тестов
+        -->
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>testcontainers</artifactId>
-            <version>${testcontainers.version}</version>
             <scope>test</scope>
         </dependency>
-        <!-- Интеграция Testcontainers с JUnit Jupiter -->
+
+        <!-- Интеграция Testcontainers с JUnit Jupiter (расширения, аннотации) -->
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>junit-jupiter</artifactId>
-            <version>${testcontainers.version}</version>
             <scope>test</scope>
         </dependency>
-        <!-- Модуль PostgreSQL для Testcontainers -->
+
+        <!-- Модуль PostgreSQL для Testcontainers: автоматически поднимает контейнер с PostgreSQL -->
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>postgresql</artifactId>
-            <version>${testcontainers.version}</version>
             <scope>test</scope>
         </dependency>
-        <!-- AssertJ для плавных проверок -->
+
+        <!--
+            AssertJ:
+            - Текучие (fluent) проверки (assertThat(...).isNotNull()...)
+            - Улучшает читаемость тестов
+        -->
         <dependency>
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
             <scope>test</scope>
         </dependency>
 
-
-
-        <!--TODO: добавить остальные зависимости-->
-        <!--Подсказка к 4 этапу: использовать BOM для Testcontainers-->
-
+        <!-- Все необходимые зависимости для текущего проекта добавлены -->
     </dependencies>
+
     <build>
         <plugins>
+            <!--
+                Spring Boot Maven Plugin:
+                - Позволяет создавать исполняемый JAR, запускать приложение через mvn spring-boot:run
+                - Обрабатывает репакaging и др.
+            -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                </plugin>
+            </plugin>
+
+            <!--
+                Компилятор Maven:
+                - Явно задаём версию плагина для воспроизводимости
+                - Указываем версии исходного и целевого кода Java
+                - Настраиваем annotationProcessorPaths, чтобы процессоры Lombok и MapStruct работали вместе
+            -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.14.0</version>
                 <configuration>
-                    <source>21</source>
-                    <target>21</target>
+                    <source>${java.version}</source>  <!-- Используем свойство -->
+                    <target>${java.version}</target>
                     <annotationProcessorPaths>
+                        <!-- Lombok аннотационный процессор -->
                         <path>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
                             <version>${lombok.version}</version>
                         </path>
+                        <!-- Связка Lombok и MapStruct -->
                         <path>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok-mapstruct-binding</artifactId>
-                            <version>0.2.0</version>
+                            <version>${lombok-mapstruct-binding.version}</version>
                         </path>
+                        <!-- MapStruct процессор: генерирует реализации мапперов -->
                         <path>
                             <groupId>org.mapstruct</groupId>
                             <artifactId>mapstruct-processor</artifactId>
-                            <version>1.5.5.Final</version>
+                            <version>${mapstruct.version}</version>
                         </path>
                     </annotationProcessorPaths>
+                    <!--
+                        Дополнительные аргументы компилятора:
+                        - Указываем MapStruct использовать Spring как компонентную модель (мапперы становятся @Component)
+                    -->
                     <compilerArgs>
                         <arg>-Amapstruct.defaultComponentModel=spring</arg>
                     </compilerArgs>
                 </configuration>
             </plugin>
+
+            <!--
+                Maven Surefire Plugin для запуска тестов:
+                - Конфигурация для работы Testcontainers в среде Windows
+                - Если вы работаете на Linux или macOS, эту настройку можно удалить или заменить на автоматическое определение
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <systemPropertyVariables>
+                        <!-- Стратегия клиента Docker для Windows (использовать WindowsClientProviderStrategy) -->
+                        <testcontainers.docker.client.strategy>org.testcontainers.dockerclient.WindowsClientProviderStrategy</testcontainers.docker.client.strategy>
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
-
-
-
-
-
- </project>
+</project>
