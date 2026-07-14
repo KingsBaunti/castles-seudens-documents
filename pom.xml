@@ -28,7 +28,7 @@
         <!-- Версия Java (используется компилятором и плагинами) -->
         <java.version>21</java.version>
         <!-- Версия Testcontainers для всех модулей (управляется через BOM) -->
-        <testcontainers.version>1.20.6</testcontainers.version>
+        <testcontainers.version>1.21.3</testcontainers.version>
         <!-- Версия Lombok для аннотационного процессора и зависимости -->
         <lombok.version>1.18.38</lombok.version>
         <!-- Версия JUnit 5 (Jupiter) – используется BOM'ом -->
