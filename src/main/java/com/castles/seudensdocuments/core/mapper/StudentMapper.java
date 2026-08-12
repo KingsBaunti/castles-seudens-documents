@@ -8,6 +8,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 import org.mapstruct.NullValuePropertyMappingStrategy;
+import java.util.Base64;
 
 @Mapper(
         componentModel = "spring", //Делаем маппер спринг бином
@@ -19,19 +20,29 @@ public interface StudentMapper {
     @Mapping(target = "id", ignore = true) //Игнорируем ID
     @Mapping(target = "transcripts", ignore = true) //Связь с оценками обрабатываем вручную
     @Mapping(target = "passport", ignore = true)
+    @Mapping(target = "avatar", ignore = true) //Игнорируем avatar, тк создаётся отдельно
     Student toEntity(StudentRequestDto requestDto);
 
     //Преобразование из Entity в DTO
     @Mapping(source = "enrollmentDate", target = "enrollmentDate")//Выглядит странно но работает только так
+    @Mapping(target = "avatar",
+            expression = "java(entity.getAvatar() != null ? java.util.Base64.getEncoder().encodeToString(entity.getAvatar()) : null)") //Преобразование из Byte[] в Base64
     StudentResponseDto toResponseDto(Student entity);
+
 
     //Преобразование из StudentRequestDto в Entity
     @Mapping(target = "id", ignore = true) //Игнорируем ID
     @Mapping(target = "passport", ignore = true)//Связь с паспортом обрабатываем вручную
     @Mapping(target = "transcripts", ignore = true) //Связь с оценками обрабатываем вручную
+    @Mapping(target = "avatar", ignore = true)
     void updateEntity(@MappingTarget Student entity, StudentRequestDto requestDto);
 
-    //
+    //Преобразование из RequestDTO в ResponseDTO
+    StudentResponseDto toResponseDto(StudentRequestDto requestDto);
+    //Преобразование из RequestDTO в ResponseDTO
+    StudentRequestDto toRequestDto(StudentResponseDto responseDto);
+
+
 
 
 

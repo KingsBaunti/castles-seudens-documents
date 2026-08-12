@@ -7,10 +7,14 @@ import com.castles.seudensdocuments.core.service.StudentService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.Map;
 
 @Slf4j
@@ -59,5 +63,35 @@ public class StudentController {
         String message = studentService.deleteStudent(id);
         return ResponseEntity.ok(Map.of("status", message));
     }
+
+    //Загрузка аватарки
+    //POST /api/students/{id}/avatar
+    @PostMapping("/{id}/avatar")
+    public ResponseEntity<Map<String, String>> uploadStudentAvatar(
+            @PathVariable Long id,
+            @RequestParam("file") MultipartFile file) throws IOException {
+        studentService.uploadAvatar(id, file);
+
+        return ResponseEntity.ok(
+                Map.of("status",
+                        "Аватарка успешно загружена для студента с id " + id)
+        );
+    }
+
+    //Получение аватарки по id
+    //GET /api/students/{id}/avatar
+    @GetMapping("/{id}/avatar")
+    public ResponseEntity<byte[]> downloadStudentAvatar(@PathVariable Long id){
+        byte[] avatar = studentService.getAvatar(id);
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.IMAGE_JPEG)
+                .header(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"avatar_" + id + ".jpg\""
+                )
+                .body(avatar);
+    }
+
 
 }

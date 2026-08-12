@@ -27,8 +27,15 @@
     <properties>
         <!-- Версия Java (используется компилятором и плагинами) -->
         <java.version>21</java.version>
-        <!-- Версия Testcontainers для всех модулей (управляется через BOM) -->
-        <testcontainers.version>1.21.3</testcontainers.version>
+
+        <!--
+            Testcontainers 1.21.4:
+            - Совместим с Docker Desktop 4.84 / Docker Engine 29+ (минимальный API 1.44)
+            - Старые artifactId (postgresql, junit-jupiter) работают без изменений в коде
+            - Не переходите на 2.x без переименования артефактов и пакетов
+        -->
+        <testcontainers.version>1.21.4</testcontainers.version>
+
         <!-- Версия Lombok для аннотационного процессора и зависимости -->
         <lombok.version>1.18.38</lombok.version>
         <!-- Версия JUnit 5 (Jupiter) – используется BOM'ом -->
@@ -54,10 +61,11 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+
             <!--
                 BOM для Testcontainers:
                 - Управляет версиями всех модулей (core, junit-jupiter, postgresql и др.)
-                - Версия задана свойством testcontainers.version
+                - Версия задана свойством testcontainers.version (1.21.4)
             -->
             <dependency>
                 <groupId>org.testcontainers</groupId>
@@ -143,10 +151,20 @@
         </dependency>
 
         <!--
+            Транспорт docker-java (httpclient5).
+            Оставляем — помогает стабильнее работать с Docker Desktop на Windows.
+        -->
+        <dependency>
+            <groupId>com.github.docker-java</groupId>
+            <artifactId>docker-java-transport-httpclient5</artifactId>
+            <version>3.4.2</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!--
             Логирование:
             - Logback – стандартная реализация SLF4J в Spring Boot
             - Явное указание версии переопределяет управляемую версию из spring-boot-starter-parent
-              (1.5.16 может быть новее, чем в Spring Boot 3.4.11; при проблемах совместимости удалите <version>)
         -->
         <dependency>
             <groupId>ch.qos.logback</groupId>
@@ -166,7 +184,7 @@
         </dependency>
 
         <!--
-            Testcontainers – ядро (версия управляется BOM'ом):
+            Testcontainers – ядро (версия управляется BOM'ом 1.21.4):
             - Предоставляет легковесные throwaway-контейнеры для интеграционных тестов
         -->
         <dependency>
@@ -199,8 +217,6 @@
             <artifactId>assertj-core</artifactId>
             <scope>test</scope>
         </dependency>
-
-        <!-- Все необходимые зависимости для текущего проекта добавлены -->
     </dependencies>
 
     <build>
@@ -208,7 +224,7 @@
             <!--
                 Spring Boot Maven Plugin:
                 - Позволяет создавать исполняемый JAR, запускать приложение через mvn spring-boot:run
-                - Обрабатывает репакaging и др.
+                - Обрабатывает re-packaging и др.
             -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
@@ -226,7 +242,7 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.14.0</version>
                 <configuration>
-                    <source>${java.version}</source>  <!-- Используем свойство -->
+                    <source>${java.version}</source>
                     <target>${java.version}</target>
                     <annotationProcessorPaths>
                         <!-- Lombok аннотационный процессор -->
@@ -259,19 +275,15 @@
             </plugin>
 
             <!--
-                Maven Surefire Plugin для запуска тестов:
-                - Конфигурация для работы Testcontainers в среде Windows
-                - Если вы работаете на Linux или macOS, эту настройку можно удалить или заменить на автоматическое определение
+                Maven Surefire Plugin для запуска тестов.
+                Принудительную WindowsClientProviderStrategy убрали —
+                она устарела и мешает автоопределению (Npipe на Windows).
+                Testcontainers сам выберет правильную стратегию.
             -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <configuration>
-                    <systemPropertyVariables>
-                        <!-- Стратегия клиента Docker для Windows (использовать WindowsClientProviderStrategy) -->
-                        <testcontainers.docker.client.strategy>org.testcontainers.dockerclient.WindowsClientProviderStrategy</testcontainers.docker.client.strategy>
-                    </systemPropertyVariables>
-                </configuration>
+                <!-- без systemPropertyVariables с docker.client.strategy -->
             </plugin>
         </plugins>
     </build>

@@ -44,4 +44,8 @@ public class Student {
     List<Transcript> transcripts;
 
 
+    @Column(columnDefinition = "BYTEA")
+    byte[] avatar;
+
+
 }

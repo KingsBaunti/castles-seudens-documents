@@ -15,7 +15,9 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -29,6 +31,7 @@ public class StudentService {
     private final StudentMapper studentMapper;
     private final PassportMapper passportMapper;
     private final TranscriptMapper transcriptMapper;
+    private static final long MAX_AVATAR_SIZE = 5*1024*1024; //1024 байт = 1 КБ, 1024 КБ = 1 МБ
 
     @Transactional
     public StudentResponseDto createStudent(StudentRequestDto requestDto){
@@ -55,7 +58,7 @@ public class StudentService {
         return studentMapper.toResponseDto(savedStudent);
     }
 
-    @Transactional
+
     public StudentResponseDto getStudent(Long id){
         Student student = studentRepository.findStudentById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Student not found with id:" + id));
@@ -107,4 +110,34 @@ public class StudentService {
         return "Пользователь с id " + id + " успешно удалён";
     }
 
+
+    @Transactional
+    public void uploadAvatar(Long id, MultipartFile file) throws IOException {
+
+        if (file.isEmpty()){
+            throw new IllegalArgumentException("Файл аватара пустой");
+        }
+
+        if (file.getSize() > MAX_AVATAR_SIZE){
+            throw new IllegalArgumentException("Размер аватара не должен превышать 5 МБ");
+        }
+
+        Student student = studentRepository.findStudentById(id)
+                .orElseThrow(() ->
+                        new EntityNotFoundException("Студент с id " + id + "не найден"));
+
+        student.setAvatar(file.getBytes());
+
+        studentRepository.save(student);
+    }
+
+    @Transactional
+    public byte[] getAvatar(Long id){
+        Student student = studentRepository.findStudentById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Студент с id " + id + " не найден"));
+        if (student.getAvatar() == null){
+           throw new EntityNotFoundException("Аватар отсутствует у студента с id " + id);
+        }
+        return student.getAvatar();
+    }
 }

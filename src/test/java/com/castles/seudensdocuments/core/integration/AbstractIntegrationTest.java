@@ -7,6 +7,8 @@ import com.castles.seudensdocuments.core.dto.StudentRequestDto;
 import com.castles.seudensdocuments.core.dto.StudentResponseDto;
 import com.castles.seudensdocuments.core.dto.TranscriptDto;
 import com.castles.seudensdocuments.core.service.StudentService;
+import com.github.dockerjava.api.DockerClient;
+import com.github.dockerjava.httpclient5.ApacheDockerHttpClient;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,18 +18,31 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.shaded.com.github.dockerjava.core.DefaultDockerClientConfig;
+import org.testcontainers.shaded.com.github.dockerjava.core.DockerClientImpl;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.util.List;
 
 
-//Базовый класс для интиграционных тестов
+//Базовый класс для интеграционных тестов
 @EnableTestContainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
+//@SuppressWarnings("resource")
 public class AbstractIntegrationTest {
-    //Тестирумый класс
+
+    //Для выполнения SQL
+    @Autowired
+    protected JdbcTemplate jdbcTemplate;
+
+    //Тестируемый класс
     @Autowired
     protected StudentService studentService;
+
+    protected Long WRONGG_STUDENT_ID = 2L;
+    protected Long defaultStudentId;
+
 
     @Container
     protected static final PostgreSQLContainer<?> postgresContainer =
@@ -35,20 +50,17 @@ public class AbstractIntegrationTest {
                     .withDatabaseName("testdb")
                     .withUsername("test")
                     .withPassword("test")
-                    .withReuse(true)//Поднимается тестовая БД один раз для всех тестов, а не для каждого по отдельности
-                    .withExposedPorts(5434);
+                    .withReuse(true);//Поднимается тестовая БД один раз для всех тестов, а не для каждого по отдельности
+
+
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", () -> "jdbc:postgresql://localhost:5434/testdb");
-        registry.add("spring.datasource.username", () -> "test");
-        registry.add("spring.datasource.password", () -> "test");
+        registry.add("spring.datasource.url", postgresContainer::getJdbcUrl);
+        registry.add("spring.datasource.username", postgresContainer::getUsername);
+        registry.add("spring.datasource.password", postgresContainer::getPassword);
         registry.add("spring.flyway.enabled", () -> "false");
         registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
     }
-
-    //Для выполнения SQL
-    @Autowired
-    protected JdbcTemplate jdbcTemplate;
 
 
     @BeforeEach
@@ -60,6 +72,7 @@ public class AbstractIntegrationTest {
                 """);
         StudentRequestDto defaultStudent = createDefaultStudentRequest();
         StudentResponseDto saved = studentService.createStudent(defaultStudent);
+        this.defaultStudentId = saved.getId();
     }
 
 
@@ -87,5 +100,6 @@ public class AbstractIntegrationTest {
 
         return request;
     }
+
 
 }
