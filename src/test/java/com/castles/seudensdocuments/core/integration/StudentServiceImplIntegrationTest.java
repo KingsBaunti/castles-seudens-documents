@@ -1,22 +1,17 @@
 package com.castles.seudensdocuments.core.integration;
 
-import com.castles.seudensdocuments.core.dto.PassportDto;
+
 import com.castles.seudensdocuments.core.dto.StudentRequestDto;
 import com.castles.seudensdocuments.core.dto.StudentResponseDto;
-import com.castles.seudensdocuments.core.dto.TranscriptDto;
-import com.castles.seudensdocuments.core.mapper.StudentMapper;
 import com.castles.seudensdocuments.core.mapper.StudentMapperImpl;
-import com.castles.seudensdocuments.core.service.StudentService;
 import jakarta.persistence.EntityNotFoundException;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.mock.web.MockMultipartFile;
-
 import java.io.IOException;
 import java.time.LocalDate;
-import java.util.List;
+
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
@@ -102,7 +97,7 @@ public class StudentServiceImplIntegrationTest extends AbstractIntegrationTest{
                 .hasMessage("Student not found with id: " + Long.MAX_VALUE);
     }
 
-
+    //Добавляем аватар студенту
     @Test
     void putStudentAvatar(){
         try {
@@ -123,6 +118,7 @@ public class StudentServiceImplIntegrationTest extends AbstractIntegrationTest{
 
     }
 
+    //Добавляем слишком большой аватар студенту
     @Test
     void putTooBigAvatar() throws IOException {
         ClassPathResource resource = new ClassPathResource("test-avatar-TooBig.jpg");
@@ -136,4 +132,34 @@ public class StudentServiceImplIntegrationTest extends AbstractIntegrationTest{
                 .hasMessage("Размер аватара не должен превышать 5 МБ");
 
     }
+
+    //Добавляем аватар студенту с неправильным ID
+    @Test
+    void putAvatarToWrongId() throws IOException {
+        ClassPathResource resource = new ClassPathResource("test-avatar.jpg");
+        byte[] avatar = resource.getInputStream().readAllBytes();
+
+        MockMultipartFile file = new MockMultipartFile("file", "test-avatar.jpg", "image/jpeg", avatar);
+
+        assertThatThrownBy(() ->
+                studentService.uploadAvatar(Long.MAX_VALUE, file))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessage("Студент с id " + Long.MAX_VALUE + " не найден");
+    }
+
+    //Получаем аватар по запросу
+    @Test
+    void getAvatar() throws IOException{
+
+        //Добавляем аватар студенту
+        ClassPathResource resource = new ClassPathResource("test-avatar.jpg");
+        byte[] sourceAvatar = resource.getInputStream().readAllBytes();
+        MockMultipartFile file = new MockMultipartFile("file", "test-avatar.jpg", "image/jpeg", sourceAvatar);
+        studentService.uploadAvatar(defaultStudentId, file);
+
+        //Получаем загруженный аватар
+        byte[] resultAvatar = studentService.getAvatar(defaultStudentId);
+        assertThat(resultAvatar).isNotNull().isEqualTo(sourceAvatar);
+    }
+
 }

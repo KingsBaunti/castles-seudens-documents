@@ -29,7 +29,6 @@ import java.util.List;
 //Базовый класс для интеграционных тестов
 @EnableTestContainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
-//@SuppressWarnings("resource")
 public class AbstractIntegrationTest {
 
     //Для выполнения SQL
@@ -40,7 +39,6 @@ public class AbstractIntegrationTest {
     @Autowired
     protected StudentService studentService;
 
-    protected Long WRONGG_STUDENT_ID = 2L;
     protected Long defaultStudentId;
 
 
@@ -64,7 +62,7 @@ public class AbstractIntegrationTest {
 
 
     @BeforeEach
-    public void putInTestData(){
+    protected void putInTestData(){
         //Очистка таблиц
         jdbcTemplate.execute("""
                 TRUNCATE TABLE student, passport, transcript 
@@ -75,9 +73,6 @@ public class AbstractIntegrationTest {
         this.defaultStudentId = saved.getId();
     }
 
-
-    @AfterEach
-    public void cleanDatabase(){}
 
 
     //Создание тестового студента

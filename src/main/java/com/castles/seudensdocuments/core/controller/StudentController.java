@@ -5,6 +5,7 @@ import com.castles.seudensdocuments.core.dto.StudentRequestDto;
 import com.castles.seudensdocuments.core.dto.StudentResponseDto;
 import com.castles.seudensdocuments.core.service.StudentService;
 
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
@@ -69,13 +70,22 @@ public class StudentController {
     @PostMapping("/{id}/avatar")
     public ResponseEntity<Map<String, String>> uploadStudentAvatar(
             @PathVariable Long id,
-            @RequestParam("file") MultipartFile file) throws IOException {
-        studentService.uploadAvatar(id, file);
+            @RequestParam("file") MultipartFile file)  {
+        try {
+            studentService.uploadAvatar(id, file);
 
-        return ResponseEntity.ok(
-                Map.of("status",
-                        "Аватарка успешно загружена для студента с id " + id)
-        );
+            return ResponseEntity.ok(
+                    Map.of("status",
+                            "Аватарка успешно загружена для студента с id " + id)
+            );
+        } catch (EntityNotFoundException e){
+            return ResponseEntity
+                    .status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
+        } catch (IOException e) {
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
+        }
+
     }
 
     //Получение аватарки по id

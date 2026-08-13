@@ -124,7 +124,7 @@ public class StudentService {
 
         Student student = studentRepository.findStudentById(id)
                 .orElseThrow(() ->
-                        new EntityNotFoundException("Студент с id " + id + "не найден"));
+                        new EntityNotFoundException("Студент с id " + id + " не найден"));
 
         student.setAvatar(file.getBytes());
 
