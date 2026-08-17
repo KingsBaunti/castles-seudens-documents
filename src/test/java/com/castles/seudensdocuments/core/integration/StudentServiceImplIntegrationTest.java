@@ -11,6 +11,7 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.mock.web.MockMultipartFile;
 import java.io.IOException;
 import java.time.LocalDate;
+import java.util.Base64;
 
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -29,6 +30,7 @@ public class StudentServiceImplIntegrationTest extends AbstractIntegrationTest{
         assertThat(found.getFirstName()).isEqualTo("Тестовый");
         assertThat(found.getLastName()).isEqualTo("Пользователь");
         assertThat(found.getEmail()).isEqualTo("test@example.com");
+        assertThat(found.getAvatar()).isNull();
         assertThat(found.getEnrollmentDate()).isEqualTo(LocalDate.now());
         //Проверка полей паспорта студента
         assertThat(found.getPassport().getPassportNumber()).isEqualTo("1234567890");
@@ -86,7 +88,7 @@ public class StudentServiceImplIntegrationTest extends AbstractIntegrationTest{
 
     //Проверяем попытку обновить данные по неправильному ID
     @Test
-    void updateStudentWithWrongId(){
+    void updateStudentByWrongId(){
 
         StudentRequestDto request = createDefaultStudentRequest();
 
@@ -101,11 +103,12 @@ public class StudentServiceImplIntegrationTest extends AbstractIntegrationTest{
     @Test
     void putStudentAvatar(){
         try {
+            //читаем аватар в массив байтов
             ClassPathResource resource = new ClassPathResource("test-avatar.jpg");
             byte[] avatar = resource.getInputStream().readAllBytes();
-
+            //Подготавливаем массив байтов к загрузки в БД как jpeg
             MockMultipartFile file = new MockMultipartFile("file", "test-avatar.jpg", "image/jpeg", avatar);
-
+            //Добавляем аватар студенту
             studentService.uploadAvatar(defaultStudentId, file);
 
             byte[] savedAvatar = studentService.getAvatar(defaultStudentId);
@@ -161,5 +164,54 @@ public class StudentServiceImplIntegrationTest extends AbstractIntegrationTest{
         byte[] resultAvatar = studentService.getAvatar(defaultStudentId);
         assertThat(resultAvatar).isNotNull().isEqualTo(sourceAvatar);
     }
+
+    //Получаем аватар по неправильному ID
+    @Test
+    void getAvatarByWrongId() throws IOException{
+
+        byte[] avatar = studentService.getAvatar(Long.MAX_VALUE);
+        assertThatThrownBy(() ->
+                studentService.getAvatar(Long.MAX_VALUE))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessage("Студент с id " + Long.MAX_VALUE + " не найден");
+    }
+
+    //Получаем студента с аватаром
+    @Test
+    void getStudentWithAvatar() throws IOException{
+
+        //Ожидаемый аватар
+        String expectedAvatar = Base64.getEncoder().encodeToString(
+                new ClassPathResource("test-avatar.jpg")
+                        .getInputStream()
+                        .readAllBytes()
+        );
+
+        //читаем аватар в массив байтов
+        ClassPathResource resource = new ClassPathResource("test-avatar.jpg");
+        byte[] avatar = resource.getInputStream().readAllBytes();
+        //Подготавливаем массив байтов к загрузки в БД как jpeg
+        MockMultipartFile file = new MockMultipartFile("file", "test-avatar.jpg", "image/jpeg", avatar);
+        //Добавляем аватар студенту
+        studentService.uploadAvatar(defaultStudentId, file);
+        //Отправляем запрос на JSON студента
+        StudentResponseDto found = studentService.getStudent(defaultStudentId);
+        assertThat(found).isNotNull();
+
+        //Проверка полей студента
+        assertThat(found.getId()).isEqualTo(defaultStudentId);
+        assertThat(found.getFirstName()).isEqualTo("Тестовый");
+        assertThat(found.getLastName()).isEqualTo("Пользователь");
+        assertThat(found.getEmail()).isEqualTo("test@example.com");
+        assertThat(found.getAvatar()).isEqualTo(expectedAvatar);
+        assertThat(found.getEnrollmentDate()).isEqualTo(LocalDate.now());
+        //Проверка полей паспорта студента
+        assertThat(found.getPassport().getPassportNumber()).isEqualTo("1234567890");
+        assertThat(found.getPassport().getIssueDate()).isEqualTo(LocalDate.of(2020, 1, 1));
+        //Проверка оценок студента
+        assertThat(found.getTranscripts().get(0).getSubject()).isEqualTo("Mathematics");
+        assertThat(found.getTranscripts().get(0).getGrade()).isEqualTo(85);
+    }
+
 
 }
