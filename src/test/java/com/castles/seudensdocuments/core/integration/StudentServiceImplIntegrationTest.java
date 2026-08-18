@@ -169,7 +169,6 @@ public class StudentServiceImplIntegrationTest extends AbstractIntegrationTest{
     @Test
     void getAvatarByWrongId() throws IOException{
 
-        byte[] avatar = studentService.getAvatar(Long.MAX_VALUE);
         assertThatThrownBy(() ->
                 studentService.getAvatar(Long.MAX_VALUE))
                 .isInstanceOf(EntityNotFoundException.class)
