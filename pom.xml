@@ -8,11 +8,8 @@
     <artifactId>student-documents</artifactId>
     <version>1.0-SNAPSHOT</version>
 
-    <!--
-        Родительский Spring Boot POM:
-        - Задаёт версии Spring Boot и плагинов по умолчанию
-        - Позволяет не указывать версии для стартеров и большинства популярных библиотек
-    -->
+
+    <!--Родительский Spring Boot POM-->
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
@@ -20,19 +17,13 @@
         <relativePath/> <!-- Всегда ищем в репозитории, не в локальной файловой системе -->
     </parent>
 
-    <!--
-        Свойства проекта:
-        - Централизованное управление версиями для переопределяемых зависимостей
-    -->
+
     <properties>
-        <!-- Версия Java (используется компилятором и плагинами) -->
         <java.version>21</java.version>
 
-        <!--
-            Testcontainers 1.21.4:
-            - Совместим с Docker Desktop 4.84 / Docker Engine 29+ (минимальный API 1.44)
-            - Старые artifactId (postgresql, junit-jupiter) работают без изменений в коде
-            - Не переходите на 2.x без переименования артефактов и пакетов
+
+        <!-- Testcontainers 1.21.4:
+        !!!Совместим с Docker Desktop 4.84 / Docker Engine 29+ (минимальный API 1.44)!!!
         -->
         <testcontainers.version>1.21.4</testcontainers.version>
 
@@ -46,11 +37,7 @@
         <lombok-mapstruct-binding.version>0.2.0</lombok-mapstruct-binding.version>
     </properties>
 
-    <!--
-        BOM-секция (Bill of Materials):
-        - Гарантирует совместимые версии для всех импортируемых групп зависимостей
-        - Избавляет от необходимости указывать версии у каждой зависимости отдельно
-    -->
+
     <dependencyManagement>
         <dependencies>
             <!-- BOM для JUnit 5: управляет версиями Jupiter, Vintage, Platform и т.д. -->
@@ -92,7 +79,7 @@
         </dependency>
 
         <!-- Утилиты -->
-        <!-- MapStruct для преобразования сущностей (scope provided нужен только на этапе компиляции) -->
+        <!-- MapStruct для преобразования сущностей -->
         <dependency>
             <groupId>org.mapstruct</groupId>
             <artifactId>mapstruct</artifactId>
@@ -111,7 +98,6 @@
         <!--
             Связка Lombok и MapStruct:
             - Гарантирует корректную совместную работу аннотационных процессоров
-            - Должна быть объявлена как provided, но добавлена в annotationProcessorPaths (см. ниже)
         -->
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -142,7 +128,6 @@
         <!--
             Spring Boot Docker Compose:
             - Автоматически запускает описанные в docker-compose.yml сервисы при старте приложения
-            - Полезно для локальной разработки
         -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -152,7 +137,7 @@
 
         <!--
             Транспорт docker-java (httpclient5).
-            Оставляем — помогает стабильнее работать с Docker Desktop на Windows.
+            Помогает стабильнее работать с Docker Desktop на Windows.
         -->
         <dependency>
             <groupId>com.github.docker-java</groupId>
@@ -164,7 +149,6 @@
         <!--
             Логирование:
             - Logback – стандартная реализация SLF4J в Spring Boot
-            - Явное указание версии переопределяет управляемую версию из spring-boot-starter-parent
         -->
         <dependency>
             <groupId>ch.qos.logback</groupId>
@@ -276,9 +260,6 @@
 
             <!--
                 Maven Surefire Plugin для запуска тестов.
-                Принудительную WindowsClientProviderStrategy убрали —
-                она устарела и мешает автоопределению (Npipe на Windows).
-                Testcontainers сам выберет правильную стратегию.
             -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

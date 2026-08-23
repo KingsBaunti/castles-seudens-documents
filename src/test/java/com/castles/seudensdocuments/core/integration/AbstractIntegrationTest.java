@@ -69,7 +69,7 @@ public class AbstractIntegrationTest {
                 RESTART IDENTITY CASCADE
                 """);
         StudentRequestDto defaultStudent = createDefaultStudentRequest();
-        StudentResponseDto saved = studentService.createStudent(defaultStudent);
+        StudentResponseDto saved = studentService.createStudent(defaultStudent).getBody();
         this.defaultStudentId = saved.getId();
     }
 

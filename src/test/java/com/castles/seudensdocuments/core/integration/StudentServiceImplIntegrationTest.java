@@ -8,14 +8,17 @@ import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockMultipartFile;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.Base64;
+import java.util.Map;
 
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class StudentServiceImplIntegrationTest extends AbstractIntegrationTest{
     @Autowired
@@ -23,7 +26,7 @@ public class StudentServiceImplIntegrationTest extends AbstractIntegrationTest{
 
     @Test
     void getStudent_shouldReturnStudent() {
-        StudentResponseDto found = studentService.getStudent(defaultStudentId);
+        StudentResponseDto found = studentService.getStudent(defaultStudentId).getBody();
         assertThat(found).isNotNull();
         //Проверка полей студента
         assertThat(found.getId()).isEqualTo(defaultStudentId);
@@ -54,7 +57,7 @@ public class StudentServiceImplIntegrationTest extends AbstractIntegrationTest{
     @Test
     void updateStudent(){
 
-        StudentResponseDto found = studentService.getStudent(defaultStudentId);
+        StudentResponseDto found = studentService.getStudent(defaultStudentId).getBody();
 
         found.setFirstName("НовоеИмя");
         found.setLastName("НоваяФамилия");
@@ -68,7 +71,7 @@ public class StudentServiceImplIntegrationTest extends AbstractIntegrationTest{
         found.getTranscripts().get(0).setGrade(67);
 
         //Обновляем студента в БД
-        StudentResponseDto result = studentService.updateStudent(defaultStudentId, studentMapper.toRequestDto(found));
+        StudentResponseDto result = studentService.updateStudent(defaultStudentId, studentMapper.toRequestDto(found)).getBody();
 
         //Проверка полей студента после обновления
         assertThat(result).isNotNull();
@@ -111,7 +114,7 @@ public class StudentServiceImplIntegrationTest extends AbstractIntegrationTest{
             //Добавляем аватар студенту
             studentService.uploadAvatar(defaultStudentId, file);
 
-            byte[] savedAvatar = studentService.getAvatar(defaultStudentId);
+            byte[] savedAvatar = studentService.getAvatar(defaultStudentId).getBody();
 
             assertThat(savedAvatar).isEqualTo(avatar);
 
@@ -129,10 +132,11 @@ public class StudentServiceImplIntegrationTest extends AbstractIntegrationTest{
 
         MockMultipartFile file = new MockMultipartFile("file", "test-avatar-TooBig.jpg", "image/jpeg", avatar);
 
-        assertThatThrownBy(() ->
-                studentService.uploadAvatar(defaultStudentId, file))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Размер аватара не должен превышать 5 МБ");
+        Map<String, String> body = studentService.uploadAvatar(defaultStudentId, file).getBody();
+
+
+
+        assertThat(body).containsEntry("error", "Размер аватара не должен превышать 5 МБ");
 
     }
 
@@ -144,10 +148,16 @@ public class StudentServiceImplIntegrationTest extends AbstractIntegrationTest{
 
         MockMultipartFile file = new MockMultipartFile("file", "test-avatar.jpg", "image/jpeg", avatar);
 
-        assertThatThrownBy(() ->
-                studentService.uploadAvatar(Long.MAX_VALUE, file))
-                .isInstanceOf(EntityNotFoundException.class)
-                .hasMessage("Студент с id " + Long.MAX_VALUE + " не найден");
+        ResponseEntity<Map<String, String>> response = studentService.uploadAvatar(Long.MAX_VALUE, file);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+
+        Map<String, String> body = response.getBody();
+
+
+
+        assertThat(body).containsEntry("error", "Студент с id " + Long.MAX_VALUE + " не найден");
+
     }
 
     //Получаем аватар по запросу
@@ -161,7 +171,7 @@ public class StudentServiceImplIntegrationTest extends AbstractIntegrationTest{
         studentService.uploadAvatar(defaultStudentId, file);
 
         //Получаем загруженный аватар
-        byte[] resultAvatar = studentService.getAvatar(defaultStudentId);
+        byte[] resultAvatar = studentService.getAvatar(defaultStudentId).getBody();
         assertThat(resultAvatar).isNotNull().isEqualTo(sourceAvatar);
     }
 
@@ -194,7 +204,7 @@ public class StudentServiceImplIntegrationTest extends AbstractIntegrationTest{
         //Добавляем аватар студенту
         studentService.uploadAvatar(defaultStudentId, file);
         //Отправляем запрос на JSON студента
-        StudentResponseDto found = studentService.getStudent(defaultStudentId);
+        StudentResponseDto found = studentService.getStudent(defaultStudentId).getBody();
         assertThat(found).isNotNull();
 
         //Проверка полей студента

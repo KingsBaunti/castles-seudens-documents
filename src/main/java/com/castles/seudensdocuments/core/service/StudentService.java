@@ -14,11 +14,16 @@ import com.castles.seudensdocuments.core.model.Transcript;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -34,7 +39,7 @@ public class StudentService {
     private static final long MAX_AVATAR_SIZE = 5*1024*1024; //1024 байт = 1 КБ, 1024 КБ = 1 МБ
 
     @Transactional
-    public StudentResponseDto createStudent(StudentRequestDto requestDto){
+    public ResponseEntity<StudentResponseDto> createStudent(StudentRequestDto requestDto){
 
         //Создаём пасспорт через маппер и синхронизируем с БД методом passportRepository.save()
         Passport passport = passportMapper.toEntity(requestDto.getPassport());
@@ -55,18 +60,18 @@ public class StudentService {
         student.setTranscripts(transcripts);
 
         Student savedStudent = studentRepository.save(student);
-        return studentMapper.toResponseDto(savedStudent);
+        return ResponseEntity.status(HttpStatus.CREATED).body(studentMapper.toResponseDto(savedStudent));
     }
 
 
-    public StudentResponseDto getStudent(Long id){
+    public ResponseEntity<StudentResponseDto> getStudent(Long id){
         Student student = studentRepository.findStudentById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Student not found with id:" + id));
-        return studentMapper.toResponseDto(student);
+        return ResponseEntity.ok(studentMapper.toResponseDto(student));
     }
 
     @Transactional
-    public StudentResponseDto updateStudent(Long id, StudentRequestDto requestDto){
+    public ResponseEntity<StudentResponseDto> updateStudent(Long id, StudentRequestDto requestDto){
 
         Student existingStudent = studentRepository.findStudentById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Student not found with id: " + id));
@@ -97,47 +102,62 @@ public class StudentService {
         existingStudent.getTranscripts().addAll(newTranscripts);
 
         Student updated = studentRepository.save(existingStudent);
-        return studentMapper.toResponseDto(updated);
+        return ResponseEntity.ok(studentMapper.toResponseDto(updated));
     }
 
 
     @Transactional
-    public String deleteStudent(Long id) {
+    public ResponseEntity<Map<String, String>> deleteStudent(Long id) {
         if (!studentRepository.existsById(id)) {
             throw new EntityNotFoundException("Student not found with id: " + id);
         }
         studentRepository.deleteById(id);
-        return "Пользователь с id " + id + " успешно удалён";
+        return ResponseEntity.ok(Map.of("status", "Пользователь с id " + id + " успешно удалён"));
     }
 
 
     @Transactional
-    public void uploadAvatar(Long id, MultipartFile file) throws IOException {
+    public ResponseEntity<Map<String, String>> uploadAvatar(Long id, MultipartFile file){
 
-        if (file.isEmpty()){
-            throw new IllegalArgumentException("Файл аватара пустой");
+        try {
+            if (file.isEmpty()){
+                return ResponseEntity.badRequest().body(Map.of("error", "Файл аватара пустой"));
+
+            }
+
+            if (file.getSize() > MAX_AVATAR_SIZE){
+                return ResponseEntity.badRequest().body(Map.of("error", "Размер аватара не должен превышать 5 МБ"));
+            }
+
+            Student student = studentRepository.findStudentById(id)
+                    .orElseThrow(() ->
+                            new EntityNotFoundException("Студент с id " + id + " не найден"));
+
+            student.setAvatar(file.getBytes());
+
+            studentRepository.save(student);
+            return ResponseEntity.ok(Map.of("status", "Аватарка успешно загружена для студента с id " + id));
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
         }
-
-        if (file.getSize() > MAX_AVATAR_SIZE){
-            throw new IllegalArgumentException("Размер аватара не должен превышать 5 МБ");
-        }
-
-        Student student = studentRepository.findStudentById(id)
-                .orElseThrow(() ->
-                        new EntityNotFoundException("Студент с id " + id + " не найден"));
-
-        student.setAvatar(file.getBytes());
-
-        studentRepository.save(student);
     }
 
     @Transactional
-    public byte[] getAvatar(Long id){
+    public ResponseEntity<byte[]> getAvatar(Long id){
         Student student = studentRepository.findStudentById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Студент с id " + id + " не найден"));
         if (student.getAvatar() == null){
            throw new EntityNotFoundException("Аватар отсутствует у студента с id " + id);
         }
-        return student.getAvatar();
+        return ResponseEntity.ok().
+                contentType(MediaType.IMAGE_JPEG).
+                header(
+                    HttpHeaders.CONTENT_DISPOSITION,
+                    "arrachment; filename=\"avatar_" + id + ".jpg\""
+                )
+                .body(student.getAvatar());
+
     }
 }
