@@ -72,5 +72,11 @@ public class StudentController {
         return studentService.getAvatar(id);
     }
 
+    //Добавление Х случайно сгенерированных студентов
+    @GetMapping("/generate/{numberOfStudents}")
+    public ResponseEntity<Map<String, Object>> generateNumberOfStudents(@PathVariable int numberOfStudents){
+        return studentService.generateStudents(numberOfStudents);
+    }
+
 
 }
