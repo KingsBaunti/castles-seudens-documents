@@ -14,16 +14,20 @@ import com.castles.seudensdocuments.core.model.Transcript;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+//import lombok.Value;
+import net.datafaker.Faker;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Map;
+import java.time.LocalDateTime;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -37,6 +41,8 @@ public class StudentService {
     private final PassportMapper passportMapper;
     private final TranscriptMapper transcriptMapper;
     private static final long MAX_AVATAR_SIZE = 5*1024*1024; //1024 байт = 1 КБ, 1024 КБ = 1 МБ
+    @Value("${spring.jpa.properties.hibernate.jdbc.batch-size:100}")
+    private int batchSize;
 
     @Transactional
     public ResponseEntity<StudentResponseDto> createStudent(StudentRequestDto requestDto){
@@ -160,4 +166,102 @@ public class StudentService {
                 .body(student.getAvatar());
 
     }
+
+
+
+    @Transactional
+    public ResponseEntity<Map<String, Object>> generateStudents(int numberOfStudents){
+        try {
+            int numberOfCreatedStudents = 0;
+            if(numberOfStudents < 0){
+                return ResponseEntity.badRequest().body(Map.of("error", "В запросе на генерацию отрицательное число"));
+            }
+            if(numberOfStudents == 0){
+                return ResponseEntity.badRequest().body(Map.of("error", "В запросе на генерацию нуль"));
+            }
+            Faker faker = new Faker(new Locale("ru"));
+            Random random = new Random();
+            List<Student> studentsBatch = new ArrayList<>(batchSize);
+            long time = System.currentTimeMillis();
+
+            for(int i = 0; i < numberOfStudents; i++){
+
+                studentsBatch.add(createRandomStudent(faker, random));
+
+                if(studentsBatch.size() == batchSize){
+                    studentRepository.saveAll(studentsBatch);
+                    studentRepository.flush();
+                    numberOfCreatedStudents += studentsBatch.size();
+                    studentsBatch.clear();
+                }
+            }
+            if(!studentsBatch.isEmpty()){
+                studentRepository.saveAll(studentsBatch);
+                studentRepository.flush();
+                numberOfCreatedStudents += studentsBatch.size();
+            }
+
+
+            time = System.currentTimeMillis() - time;
+            return ResponseEntity.ok(Map.of("status", "Generated " + numberOfCreatedStudents + " students",
+                    "executionTimeMs", time));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private Student createRandomStudent(Faker faker, Random random){
+
+        Student student = new Student();
+
+        student.setFirstName(faker.name().firstName());
+        student.setLastName(faker.name().lastName());
+        student.setEmail(faker.internet().emailAddress());
+        student.setEnrollmentDate(faker.timeAndDate().birthday());
+
+        student.setPassport(createRandomPassport(faker));
+
+        //От трёх до восьми оценок
+        int transcriptsCount = faker.random().nextInt(3, 8);
+        List<Transcript> transcripts = new ArrayList<>();
+        for(int i = 0; i <= transcriptsCount; i++){
+            transcripts.add(createRandomTranscript(faker));
+        }
+        student.setTranscripts(transcripts);
+
+        //Случайное добавление аватара
+        if(random.nextBoolean()){
+
+            try {
+                ClassPathResource resource = new ClassPathResource("schakal.jpg");
+                byte[] avatar = resource.getInputStream().readAllBytes();
+                student.setAvatar(avatar);
+            } catch (IOException e) {
+                throw new RuntimeException("Ошибка при присвоении аватара случайному студенту", e);
+            }
+
+        }
+
+
+        return student;
+    }
+    private Passport createRandomPassport(Faker faker){
+
+        Passport passport = new Passport();
+
+        passport.setPassportNumber(faker.bothify("#### ######"));
+        passport.setIssueDate(faker.timeAndDate().birthday());
+
+        return passport;
+    }
+    private Transcript createRandomTranscript(Faker faker){
+
+        Transcript transcript = new Transcript();
+
+        transcript.setSubject(faker.educator().course());
+        transcript.setGrade(faker.random().nextInt(1, 5));
+
+        return transcript;
+    }
+
 }

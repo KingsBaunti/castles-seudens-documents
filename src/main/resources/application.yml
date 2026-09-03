@@ -17,6 +17,11 @@ spring:
     show-sql: true
 
     properties:
+      hibernate:
+        batch_size: 100
+        order_updates: true
+      order_inserts: true
+      jdbc.batch_versioned_data: true
       #Диалект с уточнением базы данных
       dialect: org.hibernate.dialect.PostgreSQLDialect
       #Формат SQL в логах
@@ -40,3 +45,4 @@ logging:
     #Отображаем в логах ResultSet
     org.hibernate.orm.jdbc.extract: TRACE
 
+#

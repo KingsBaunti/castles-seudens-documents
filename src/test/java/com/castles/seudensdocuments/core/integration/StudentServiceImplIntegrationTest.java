@@ -1,11 +1,15 @@
 package com.castles.seudensdocuments.core.integration;
 
 
+import com.castles.seudensdocuments.core.dao.StudentRepository;
 import com.castles.seudensdocuments.core.dto.StudentRequestDto;
 import com.castles.seudensdocuments.core.dto.StudentResponseDto;
 import com.castles.seudensdocuments.core.mapper.StudentMapperImpl;
 import jakarta.persistence.EntityNotFoundException;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpStatus;
@@ -17,12 +21,16 @@ import java.util.Base64;
 import java.util.Map;
 
 
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+@Slf4j
 public class StudentServiceImplIntegrationTest extends AbstractIntegrationTest{
     @Autowired
     private StudentMapperImpl studentMapper;
+    @Autowired
+    private StudentRepository studentRepository;
 
     @Test
     void getStudent_shouldReturnStudent() {
@@ -177,7 +185,7 @@ public class StudentServiceImplIntegrationTest extends AbstractIntegrationTest{
 
     //Получаем аватар по неправильному ID
     @Test
-    void getAvatarByWrongId() throws IOException{
+    void getAvatarByWrongId(){
 
         assertThatThrownBy(() ->
                 studentService.getAvatar(Long.MAX_VALUE))
@@ -221,6 +229,82 @@ public class StudentServiceImplIntegrationTest extends AbstractIntegrationTest{
         assertThat(found.getTranscripts().get(0).getSubject()).isEqualTo("Mathematics");
         assertThat(found.getTranscripts().get(0).getGrade()).isEqualTo(85);
     }
+
+    //Пытаемся нагенерировать отрицательное число студентов
+    @Test
+    void generateUnderZeroStudents(){
+        ResponseEntity<Map<String, Object>> response = studentService.generateStudents(-1);
+        assertThat(response.getBody()).containsEntry("error", "В запросе на генерацию отрицательное число");
+    }
+    //Пытаемся нагенерировать нуль студентов
+    @Test
+    void generateZeroStudents(){
+        ResponseEntity<Map<String, Object>> response = studentService.generateStudents(0);
+        assertThat(response.getBody()).containsEntry("error", "В запросе на генерацию нуль");
+    }
+
+    //Генерируем одного студента
+    @Test
+    void generateOneStudent(){
+        //Удаляем дефолтного студента перед генерацией и проверкой сгенерированных студентов
+        studentRepository.deleteAll();
+        ResponseEntity<Map<String, Object>> response = studentService.generateStudents(1);
+        assertThat(studentRepository.count()).isEqualTo(1L);
+        assertThat(response.getBody()).containsEntry("status", "Generated 1 students");
+        log.info("Генерация студентов заняла - {}мс", response.getBody().get("executionTimeMs"));
+    }
+    //Генерируем 10 студентов
+    @Test
+    void generateTeenStudent(){
+        //Удаляем дефолтного студента перед генерацией и проверкой сгенерированных студентов
+        studentRepository.deleteAll();
+        ResponseEntity<Map<String, Object>> response = studentService.generateStudents(10);
+        assertThat(studentRepository.count()).isEqualTo(10L);
+        assertThat(response.getBody()).containsEntry("status", "Generated 10 students");
+        log.info("Генерация студентов заняла - {}мс", response.getBody().get("executionTimeMs"));
+    }
+    //Генерируем 100 студентов
+    @Test
+    void generateOneHundredStudent(){
+        //Удаляем дефолтного студента перед генерацией и проверкой сгенерированных студентов
+        studentRepository.deleteAll();
+        ResponseEntity<Map<String, Object>> response = studentService.generateStudents(100);
+        assertThat(studentRepository.count()).isEqualTo(100L);
+        assertThat(response.getBody()).containsEntry("status", "Generated 100 students");
+        log.info("Генерация студентов заняла - {}мс", response.getBody().get("executionTimeMs"));
+    }
+    //Генерируем 1000 студентов
+    @Test
+    void generateOneThousandStudent(){
+//Удаляем дефолтного студента перед генерацией и проверкой сгенерированных студентов
+        studentRepository.deleteAll();
+        ResponseEntity<Map<String, Object>> response = studentService.generateStudents(1000);
+        assertThat(studentRepository.count()).isEqualTo(1000L);
+        assertThat(response.getBody()).containsEntry("status", "Generated 1000 students");
+        log.info("Генерация студентов заняла - {}мс", response.getBody().get("executionTimeMs"));
+    }
+    //Генерируем 10 000 студентов
+    @Test
+    void generateTeenThousandStudent(){
+        //Удаляем дефолтного студента перед генерацией и проверкой сгенерированных студентов
+        studentRepository.deleteAll();
+        ResponseEntity<Map<String, Object>> response = studentService.generateStudents(10_000);
+        assertThat(studentRepository.count()).isEqualTo(10_000L);
+        assertThat(response.getBody()).containsEntry("status", "Generated 10000 students");
+        log.info("Генерация студентов заняла - {}мс", response.getBody().get("executionTimeMs"));
+    }
+    //Генерируем 100 000 студентов
+    @Test
+    void generateOneHundredThousandStudent(){
+        //Удаляем дефолтного студента перед генерацией и проверкой сгенерированных студентов
+        studentRepository.deleteAll();
+        ResponseEntity<Map<String, Object>> response = studentService.generateStudents(100_000);
+        assertThat(studentRepository.count()).isEqualTo(100_000L);
+        assertThat(response.getBody()).containsEntry("status", "Generated 100000 students");
+        log.info("Генерация студентов заняла - {}мс", response.getBody().get("executionTimeMs"));
+    }
+
+
 
 
 }
