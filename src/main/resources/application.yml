@@ -35,18 +35,18 @@ spring:
 logging:
   level:
     #Для написанного кода логирование максимальное
-    com.castles.seudensdocuments.core: TRACE
+    com.castles.seudensdocuments.core: INFO
     #В логах отображаем информацию о обработке спрингом HHTP запросов
-    org.springframework.web: DEBUG
+    org.springframework.web: WARN
     #Отображаем в логах SQL запросы к БД
-    org.hibernate.SQL: TRACE
+    org.hibernate.SQL: WARN
     #В SQL запросах к БД подставляем реальные значения вместо "?"
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
-    org.hibernate.type.descriptor.sql: TRACE
-    org.hibernate.orm.jdbc.bind: TRACE
+    org.hibernate.type.descriptor.sql.BasicBinder: WARN
+    org.hibernate.type.descriptor.sql: WARN
+    org.hibernate.orm.jdbc.bind: WARN
     #Отображаем в логах подробно результат мапинга из БД
-    org.hibernate.orm.results.bind: TRACE
+    org.hibernate.orm.results.bind: WARN
     #Отображаем в логах ResultSet
-    org.hibernate.orm.jdbc.extract: TRACE
+    org.hibernate.orm.jdbc.extract: WARN
 
 #

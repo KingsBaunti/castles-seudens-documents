@@ -6,6 +6,9 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcType;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -43,8 +46,8 @@ public class Student {
             orphanRemoval = true)
     List<Transcript> transcripts;
 
-
-    @Column(columnDefinition = "BYTEA")
+    @Column(name = "avatar")
+    @JdbcTypeCode(SqlTypes.BINARY)
     byte[] avatar;
 
 
