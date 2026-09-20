@@ -7,4 +7,4 @@ CREATE TABLE transcript
     id     BIGINT PRIMARY KEY,
     subject VARCHAR(50),
     grade  INTEGER
-);git status
+);

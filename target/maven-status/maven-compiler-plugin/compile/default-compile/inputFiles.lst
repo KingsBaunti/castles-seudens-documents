@@ -1,0 +1,16 @@
+C:\Users\Kings\Desktop\Java\castles-seudents-documents\src\main\java\com\castles\seudensdocuments\core\controller\StudentController.java
+C:\Users\Kings\Desktop\Java\castles-seudents-documents\src\main\java\com\castles\seudensdocuments\core\dao\PassportRepository.java
+C:\Users\Kings\Desktop\Java\castles-seudents-documents\src\main\java\com\castles\seudensdocuments\core\dao\StudentRepository.java
+C:\Users\Kings\Desktop\Java\castles-seudents-documents\src\main\java\com\castles\seudensdocuments\core\dao\TranscriptRepository.java
+C:\Users\Kings\Desktop\Java\castles-seudents-documents\src\main\java\com\castles\seudensdocuments\core\dto\PassportDto.java
+C:\Users\Kings\Desktop\Java\castles-seudents-documents\src\main\java\com\castles\seudensdocuments\core\dto\StudentRequestDto.java
+C:\Users\Kings\Desktop\Java\castles-seudents-documents\src\main\java\com\castles\seudensdocuments\core\dto\StudentResponseDto.java
+C:\Users\Kings\Desktop\Java\castles-seudents-documents\src\main\java\com\castles\seudensdocuments\core\dto\TranscriptDto.java
+C:\Users\Kings\Desktop\Java\castles-seudents-documents\src\main\java\com\castles\seudensdocuments\core\mapper\PassportMapper.java
+C:\Users\Kings\Desktop\Java\castles-seudents-documents\src\main\java\com\castles\seudensdocuments\core\mapper\StudentMapper.java
+C:\Users\Kings\Desktop\Java\castles-seudents-documents\src\main\java\com\castles\seudensdocuments\core\mapper\TranscriptMapper.java
+C:\Users\Kings\Desktop\Java\castles-seudents-documents\src\main\java\com\castles\seudensdocuments\core\model\Passport.java
+C:\Users\Kings\Desktop\Java\castles-seudents-documents\src\main\java\com\castles\seudensdocuments\core\model\Student.java
+C:\Users\Kings\Desktop\Java\castles-seudents-documents\src\main\java\com\castles\seudensdocuments\core\model\Transcript.java
+C:\Users\Kings\Desktop\Java\castles-seudents-documents\src\main\java\com\castles\seudensdocuments\core\service\StudentService.java
+C:\Users\Kings\Desktop\Java\castles-seudents-documents\src\main\java\com\castles\seudensdocuments\core\StudentsDocumentsApplication.java

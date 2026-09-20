@@ -1,0 +1,42 @@
+#Запуск - docker-compose up -d
+#Стоп - docker-compose down
+
+
+#Последняя верссия
+version: '3.8'
+
+services:
+
+  postgres:
+
+    image: postgres:16
+    container_name: students_documents_project_postgres
+
+    #Перезапускать контейнер если он упал или перезагрузился хост, но не если остановлен вручную
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: students_documents_bd
+
+      #порты в формате "порт хоста:порт контейнера"
+      #при пооддлючении к localhost:8080 попадаем в PostgresSQL внутри контейнера на порту 8080
+    ports:
+      - "5433:5432"
+
+      #Тома (volumes) для сохранения данных, без него при удалении контейнера все данные в БД будут утеряны
+      #postgres_data - именованный том с привязкой к папке в контейнере
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    #проверка здоровья проверяет что контейнер запущен и БД готова к работе
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U admin -d students_documents_bd" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+
+volumes:
+  postgres_data:

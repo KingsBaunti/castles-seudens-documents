@@ -1,0 +1,45 @@
+$kind: http-request
+url: http://localhost:8080/api/students/generate/10000
+method: GET
+body:
+  type: json
+  content: "{\r
+
+    \    \"firstName\": \"Ivan\",\r
+
+    \    \"lastName\": \"Petrov\",\r
+
+    \    \"email\": \"ivan@mail.ru\",\r
+
+    \    \"enrollmentDate\": \"2023-01-01\",\r
+
+    \    \"passport\": {\r
+
+    \        \"passportNumber\": \"AB123456\",\r
+
+    \        \"issueDate\": \"2020-05-01\"\r
+
+    \    },\r
+
+    \    \"transcripts\": [\r
+
+    \        {\r
+
+    \            \"subject\": \"Math\",\r
+
+    \            \"grade\": 5\r
+
+    \        },\r
+
+    \        {\r
+
+    \            \"subject\": \"Physics\",\r
+
+    \            \"grade\": 4\r
+
+    \        }\r
+
+    \    ]\r
+
+    }\r\n"
+order: 1786305640861
