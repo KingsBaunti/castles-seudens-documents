@@ -6,13 +6,17 @@ spring:
     username: admin
     password: admin
     driver-class-name: org.postgresql.Driver
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    validate-on-migrate: true
   jpa:
 
     hibernate:
       #validate - проверяет наличие таблиц и их колонки
       #update - дополняет но не удаляет
       #create-drop
-      ddl-auto: create-drop
+      ddl-auto: validate
     #SQL в логах
     show-sql: true
 
