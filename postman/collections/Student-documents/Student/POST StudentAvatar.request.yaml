@@ -1,0 +1,14 @@
+$kind: http-request
+name: POST StudentAvatar
+url: http://localhost:8080/api/students/1/avatar
+method: POST
+body:
+  type: formdata
+  content:
+    - type: file
+      key: ""
+      src:
+        - /C:/Users/Kings/Desktop/Java/castles-seudents-documents/postman/avatars/12.jpg
+      description: ""
+      disabled: false
+order: 1834256312170902

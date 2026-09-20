@@ -216,16 +216,20 @@ public class StudentService {
 
         student.setFirstName(faker.name().firstName());
         student.setLastName(faker.name().lastName());
-        student.setEmail(faker.internet().emailAddress());
+        student.setEmail(UUID.randomUUID() + faker.internet().emailAddress());
         student.setEnrollmentDate(faker.timeAndDate().birthday());
 
-        student.setPassport(createRandomPassport(faker));
+        Passport passport = createRandomPassport(faker);
+        student.setPassport(passport);
+        passport.setStudent(student);
 
         //От трёх до восьми оценок
         int transcriptsCount = faker.random().nextInt(3, 8);
         List<Transcript> transcripts = new ArrayList<>();
         for(int i = 0; i <= transcriptsCount; i++){
-            transcripts.add(createRandomTranscript(faker));
+            Transcript transcript = createRandomTranscript(faker);
+            transcripts.add(transcript);
+            transcript.setStudent(student);
         }
         student.setTranscripts(transcripts);
 

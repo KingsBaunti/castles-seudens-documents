@@ -1,0 +1,14 @@
+$kind: http-request
+name: POST StudentAvatarOver5MB
+url: http://localhost:8080/api/students/{{id}}?id=1
+method: POST
+queryParams:
+  - key: id
+    value: "1"
+    disabled: false
+    description: ID студента
+body:
+  type: file
+  content:
+    src: /C:/Users/Kings/Desktop/Java/castles-seudents-documents/postman/avatars/11_5mb.jpg
+order: 3379319934123527
