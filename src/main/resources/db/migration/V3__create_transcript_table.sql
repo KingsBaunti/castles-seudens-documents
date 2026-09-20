@@ -4,7 +4,7 @@ CREATE SEQUENCE transcript_sequence
 
 CREATE TABLE transcript
 (
-    id     BIGINT PRIMARY KEY,
+    id     BIGINT PRIMARY KEY DEFAULT nextval('transcript_sequence'),
     subject VARCHAR(50),
     grade  INTEGER
 );
