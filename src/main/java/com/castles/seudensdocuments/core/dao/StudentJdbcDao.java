@@ -24,7 +24,7 @@ public class StudentJdbcDao {
     public void studentBatchCreate(List<Student> students){
         jdbc.batchUpdate("INSERT INTO student" +
                 "(id, first_name, last_name, email, enrollment_date, avatar)" +
-                "VALUES (?, ?, ?, ?, ?)",
+                "VALUES (?, ?, ?, ?, ?, ?)",
                 students,
                 1000,
                 (ps, student) -> {
