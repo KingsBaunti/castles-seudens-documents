@@ -73,9 +73,15 @@ public class StudentController {
     }
 
     //Добавление Х случайно сгенерированных студентов
-    @GetMapping("/generate/{numberOfStudents}")
+    @PostMapping("/generate/{numberOfStudents}")
     public ResponseEntity<Map<String, Object>> generateNumberOfStudents(@PathVariable int numberOfStudents){
         return studentService.generateStudents(numberOfStudents);
+    }
+
+    //Генерация случайных студентов с вставкой через batchUpdate
+    @PostMapping("generate-batch/{numberOfStudents}")
+    public ResponseEntity<Map<String, Object>> generateButchNumberOfStudents(@PathVariable int numberOfStudents){
+        return studentService.generateStudentsWithJdbcBatchUpdate(numberOfStudents);
     }
 
 
