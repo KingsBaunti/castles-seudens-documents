@@ -305,6 +305,67 @@ public class StudentServiceImplIntegrationTest extends AbstractIntegrationTest{
     }
 
 
+    //Генерация студентов со вставкой с помощью JDBC Template batchUpdate
+    @Test
+    void generateOneStudentWithJdbcBatchUpdate(){
+        //Удаляем дефолтного студента перед генерацией и проверкой сгенерированных студентов
+        studentRepository.deleteAll();
+        ResponseEntity<Map<String, Object>> response = studentService.generateStudentsWithJdbcBatchUpdate(1);
+        assertThat(studentRepository.count()).isEqualTo(1L);
+        assertThat(response.getBody()).containsEntry("status", "Generated 1 students");
+        log.info("Генерация студентов заняла - {}мс", response.getBody().get("executionTimeMs"));
+    }
+    //Генерируем 10 студентов
+    @Test
+    void generateTeenStudentWithJdbcBatchUpdate(){
+        //Удаляем дефолтного студента перед генерацией и проверкой сгенерированных студентов
+        studentRepository.deleteAll();
+        ResponseEntity<Map<String, Object>> response = studentService.generateStudentsWithJdbcBatchUpdate(10);
+        assertThat(studentRepository.count()).isEqualTo(10L);
+        assertThat(response.getBody()).containsEntry("status", "Generated 10 students");
+        log.info("Генерация студентов заняла - {}мс", response.getBody().get("executionTimeMs"));
+    }
+    //Генерируем 100 студентов
+    @Test
+    void generateOneHundredStudentWithJdbcBatchUpdate(){
+        //Удаляем дефолтного студента перед генерацией и проверкой сгенерированных студентов
+        studentRepository.deleteAll();
+        ResponseEntity<Map<String, Object>> response = studentService.generateStudentsWithJdbcBatchUpdate(100);
+        assertThat(studentRepository.count()).isEqualTo(100L);
+        assertThat(response.getBody()).containsEntry("status", "Generated 100 students");
+        log.info("Генерация студентов заняла - {}мс", response.getBody().get("executionTimeMs"));
+    }
+    //Генерируем 1000 студентов
+    @Test
+    void generateOneThousandStudentWithJdbcBatchUpdate(){
+//Удаляем дефолтного студента перед генерацией и проверкой сгенерированных студентов
+        studentRepository.deleteAll();
+        ResponseEntity<Map<String, Object>> response = studentService.generateStudentsWithJdbcBatchUpdate(1000);
+        assertThat(studentRepository.count()).isEqualTo(1000L);
+        assertThat(response.getBody()).containsEntry("status", "Generated 1000 students");
+        log.info("Генерация студентов заняла - {}мс", response.getBody().get("executionTimeMs"));
+    }
+    //Генерируем 10 000 студентов
+    @Test
+    void generateTeenThousandStudentWithJdbcBatchUpdate(){
+        //Удаляем дефолтного студента перед генерацией и проверкой сгенерированных студентов
+        studentRepository.deleteAll();
+        ResponseEntity<Map<String, Object>> response = studentService.generateStudentsWithJdbcBatchUpdate(10_000);
+        assertThat(studentRepository.count()).isEqualTo(10_000L);
+        assertThat(response.getBody()).containsEntry("status", "Generated 10000 students");
+        log.info("Генерация студентов заняла - {}мс", response.getBody().get("executionTimeMs"));
+    }
+    //Генерируем 100 000 студентов
+    @Test
+    void generateOneHundredThousandStudentWithJdbcBatchUpdate(){
+        //Удаляем дефолтного студента перед генерацией и проверкой сгенерированных студентов
+        studentRepository.deleteAll();
+        ResponseEntity<Map<String, Object>> response = studentService.generateStudentsWithJdbcBatchUpdate(100_000);
+        assertThat(studentRepository.count()).isEqualTo(100_000L);
+        assertThat(response.getBody()).containsEntry("status", "Generated 100000 students");
+        log.info("Генерация студентов заняла - {}мс", response.getBody().get("executionTimeMs"));
+    }
+
 
 
 }

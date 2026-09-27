@@ -1,0 +1,45 @@
+package com.castles.seudensdocuments.core.dao;
+
+import com.castles.seudensdocuments.core.model.Student;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+
+@Repository
+@RequiredArgsConstructor
+public class StudentJdbcDao {
+    private final JdbcTemplate jdbc;
+
+    @Value("${jdbc_template.dao.batch_size}")
+    private int batchSize;
+
+
+    public List<Long> getStudentIdList(int numberOfId){
+        return jdbc.query(
+                "SELECT nextval('student_sequence') FROM generate_series(1,?)",
+                (rs, rowNum) -> rs.getLong(1),
+                numberOfId);
+    }
+
+    public void studentBatchCreate(List<Student> students){
+        jdbc.batchUpdate("INSERT INTO student" +
+                "(id, first_name, last_name, email, enrollment_date, avatar)" +
+                "VALUES (?, ?, ?, ?, ?, ?)",
+                students,
+                batchSize,
+                (ps, student) -> {
+                    ps.setLong(1, student.getId());
+                    ps.setString(2, student.getFirstName());
+                    ps.setString(3, student.getLastName());
+                    ps.setString(4, student.getEmail());
+                    ps.setObject(5, student.getEnrollmentDate());
+                    ps.setObject(6, student.getAvatar());
+                }
+                );
+
+    }
+
+}

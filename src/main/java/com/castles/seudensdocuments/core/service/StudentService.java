@@ -1,8 +1,6 @@
 package com.castles.seudensdocuments.core.service;
 
-import com.castles.seudensdocuments.core.dao.PassportRepository;
-import com.castles.seudensdocuments.core.dao.StudentRepository;
-import com.castles.seudensdocuments.core.dao.TranscriptRepository;
+import com.castles.seudensdocuments.core.dao.*;
 import com.castles.seudensdocuments.core.dto.StudentRequestDto;
 import com.castles.seudensdocuments.core.dto.StudentResponseDto;
 import com.castles.seudensdocuments.core.mapper.PassportMapper;
@@ -43,6 +41,10 @@ public class StudentService {
     private static final long MAX_AVATAR_SIZE = 5*1024*1024; //1024 байт = 1 КБ, 1024 КБ = 1 МБ
     @Value("${spring.jpa.properties.hibernate.jdbc.batch-size:100}")
     private int batchSize;
+
+    private final StudentJdbcDao studentJdbcDao;
+    private final PassportJdbcDao passportJdbcDao;
+    private final TranscriptJdbcDao transcriptJdbcDao;
 
     @Transactional
     public ResponseEntity<StudentResponseDto> createStudent(StudentRequestDto requestDto){
@@ -210,6 +212,15 @@ public class StudentService {
         }
     }
 
+    private List<Student> createRandomStudentList(int numberOfStudents){
+        List<Student> studentList = new ArrayList<>();
+        Faker faker = new Faker(new Locale("ru"));
+        Random random = new Random();
+        for(int i = 0; i < numberOfStudents; i++){
+            studentList.add(createRandomStudent(faker, random));
+        }
+        return studentList;
+    }
     private Student createRandomStudent(Faker faker, Random random){
 
         Student student = new Student();
@@ -226,7 +237,7 @@ public class StudentService {
         //От трёх до восьми оценок
         int transcriptsCount = faker.random().nextInt(3, 8);
         List<Transcript> transcripts = new ArrayList<>();
-        for(int i = 0; i <= transcriptsCount; i++){
+        for(int i = 0; i < transcriptsCount; i++){
             Transcript transcript = createRandomTranscript(faker);
             transcripts.add(transcript);
             transcript.setStudent(student);
@@ -266,6 +277,52 @@ public class StudentService {
         transcript.setGrade(faker.random().nextInt(1, 5));
 
         return transcript;
+    }
+
+    @Transactional
+    public ResponseEntity<Map<String, Object>> generateStudentsWithJdbcBatchUpdate(int numberOfStudents){
+        try {
+            if(numberOfStudents <= 0){
+                return ResponseEntity.badRequest().body(Map.of("error", "В запросе число студентов <= 0"));
+            }
+
+            Long time = System.currentTimeMillis();
+
+            List<Student> students = createRandomStudentList(numberOfStudents);
+            List<Long> studentIds = studentJdbcDao.getStudentIdList(numberOfStudents);
+            List<Long> passportIds = passportJdbcDao.getPassportIdList(numberOfStudents);
+            List<Passport> passports = new ArrayList<>(numberOfStudents);
+            List<Long> transcriptIds = new ArrayList<>();
+            List<Transcript> transcripts = new ArrayList<>();
+
+
+            for(int i = 0; i < students.size(); i++){
+
+                students.get(i).setId(studentIds.get(i));
+
+                passports.add(students.get(i).getPassport());
+                passports.get(i).setId(passportIds.get(i));
+
+                transcripts.addAll(students.get(i).getTranscripts());
+            }
+
+            transcriptIds.addAll(transcriptJdbcDao.getTranscriptIdList(transcripts.size()));
+            for(int i = 0; i < transcriptIds.size(); i++){
+                transcripts.get(i).setId(transcriptIds.get(i));
+            }
+
+            studentJdbcDao.studentBatchCreate(students);
+            passportJdbcDao.passportBatchCreate(passports);
+            transcriptJdbcDao.createTranscripts(transcripts);
+
+            time = System.currentTimeMillis() - time;
+            return ResponseEntity.ok(Map.of("status", "Generated " + students.size() + " students",
+                    "executionTimeMs", time));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+
     }
 
 }
