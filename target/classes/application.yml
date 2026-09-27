@@ -1,3 +1,8 @@
+#Настрйоки для JdbcTemplate
+jdbc_template:
+  dao:
+    batch_size: 1000
+
 # настройка подключения к базе данных
 spring:
   datasource:

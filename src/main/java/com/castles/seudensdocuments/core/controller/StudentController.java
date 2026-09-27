@@ -1,6 +1,7 @@
 package com.castles.seudensdocuments.core.controller;
 
 
+import com.castles.seudensdocuments.core.dto.StudentPageResponse;
 import com.castles.seudensdocuments.core.dto.StudentRequestDto;
 import com.castles.seudensdocuments.core.dto.StudentResponseDto;
 import com.castles.seudensdocuments.core.service.StudentService;
@@ -8,6 +9,10 @@ import com.castles.seudensdocuments.core.service.StudentService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -16,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.Map;
 
 @Slf4j
@@ -82,6 +88,38 @@ public class StudentController {
     @PostMapping("generate-batch/{numberOfStudents}")
     public ResponseEntity<Map<String, Object>> generateButchNumberOfStudents(@PathVariable int numberOfStudents){
         return studentService.generateStudentsWithJdbcBatchUpdate(numberOfStudents);
+    }
+
+    //Поиск с пагинацией и фильтрацией
+    //GET /api/students?name=Ivan&email=ivan@mail.ru&enrollmentDateFrom=2023-01-01&enrollmentDateTo=2024-01-01&page=0&size=2&sort=firstName,asc
+    //Без фильтров — все студенты, страница 0, по 10
+    //GET /api/students
+    //GET /api/students?name=ivan
+    @GetMapping
+    public StudentPageResponse getStudent(
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String email,
+            @RequestParam(required = false) LocalDate enrollmentDateFrom,
+            @RequestParam(required = false) LocalDate enrollmentDateTo,
+            @PageableDefault(size = 10, page = 0, sort = "id")Pageable pageable
+            ){
+
+        try {
+            //Если сортировка по имени, то заменяем её на фамилию
+            if(pageable.getSort().getOrderFor("name") != null){
+                Sort.Order order = pageable.getSort().getOrderFor("name");
+                pageable = PageRequest.of(
+                        pageable.getPageNumber(),
+                        pageable.getPageSize(),
+                        Sort.by(order.getDirection(), "firstName")
+                );
+            }
+
+            return studentService.findAll(name, email, enrollmentDateFrom, enrollmentDateTo, pageable);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
     }
 
 

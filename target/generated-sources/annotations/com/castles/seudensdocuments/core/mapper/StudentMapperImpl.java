@@ -3,6 +3,7 @@ package com.castles.seudensdocuments.core.mapper;
 import com.castles.seudensdocuments.core.dto.PassportDto;
 import com.castles.seudensdocuments.core.dto.StudentRequestDto;
 import com.castles.seudensdocuments.core.dto.StudentResponseDto;
+import com.castles.seudensdocuments.core.dto.StudentResponseWithoutAvatar;
 import com.castles.seudensdocuments.core.dto.TranscriptDto;
 import com.castles.seudensdocuments.core.model.Passport;
 import com.castles.seudensdocuments.core.model.Student;
@@ -14,7 +15,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2026-09-24T21:11:22+0300",
+    date = "2026-09-27T19:40:39+0300",
     comments = "version: 1.5.5.Final, compiler: javac, environment: Java 21.0.12 (Microsoft)"
 )
 @Component
@@ -55,6 +56,25 @@ public class StudentMapperImpl implements StudentMapper {
         studentResponseDto.setAvatar( entity.getAvatar() != null ? java.util.Base64.getEncoder().encodeToString(entity.getAvatar()) : null );
 
         return studentResponseDto;
+    }
+
+    @Override
+    public StudentResponseWithoutAvatar toResponseWithoutAvatarDTO(Student entity) {
+        if ( entity == null ) {
+            return null;
+        }
+
+        StudentResponseWithoutAvatar studentResponseWithoutAvatar = new StudentResponseWithoutAvatar();
+
+        studentResponseWithoutAvatar.setEnrollmentDate( entity.getEnrollmentDate() );
+        studentResponseWithoutAvatar.setId( entity.getId() );
+        studentResponseWithoutAvatar.setFirstName( entity.getFirstName() );
+        studentResponseWithoutAvatar.setLastName( entity.getLastName() );
+        studentResponseWithoutAvatar.setEmail( entity.getEmail() );
+        studentResponseWithoutAvatar.setPassport( passportToPassportDto( entity.getPassport() ) );
+        studentResponseWithoutAvatar.setTranscripts( transcriptListToTranscriptDtoList( entity.getTranscripts() ) );
+
+        return studentResponseWithoutAvatar;
     }
 
     @Override

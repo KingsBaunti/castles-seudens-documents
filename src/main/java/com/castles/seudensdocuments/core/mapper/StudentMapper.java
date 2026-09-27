@@ -3,6 +3,7 @@ package com.castles.seudensdocuments.core.mapper;
 
 import com.castles.seudensdocuments.core.dto.StudentRequestDto;
 import com.castles.seudensdocuments.core.dto.StudentResponseDto;
+import com.castles.seudensdocuments.core.dto.StudentResponseWithoutAvatar;
 import com.castles.seudensdocuments.core.model.Student;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -28,6 +29,10 @@ public interface StudentMapper {
     @Mapping(target = "avatar",
             expression = "java(entity.getAvatar() != null ? java.util.Base64.getEncoder().encodeToString(entity.getAvatar()) : null)") //Преобразование из Byte[] в Base64
     StudentResponseDto toResponseDto(Student entity);
+
+    //Преобразование из Entity в DTO без аватара
+    @Mapping(source = "enrollmentDate", target = "enrollmentDate")//Выглядит странно но работает только так
+    StudentResponseWithoutAvatar toResponseWithoutAvatarDTO(Student entity);
 
 
     //Преобразование из StudentRequestDto в Entity
