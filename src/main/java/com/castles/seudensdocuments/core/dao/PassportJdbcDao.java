@@ -2,19 +2,21 @@ package com.castles.seudensdocuments.core.dao;
 
 import com.castles.seudensdocuments.core.model.Passport;
 import com.castles.seudensdocuments.core.model.Student;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
 @Repository
+@RequiredArgsConstructor
 public class PassportJdbcDao {
 
     private final JdbcTemplate jdbc;
 
-    public PassportJdbcDao(JdbcTemplate jbdc){
-        this.jdbc = jbdc;
-    }
+    @Value("${jdbc_template.dao.batch_size}")
+    private int batchSize;
 
     public List<Long> getPassportIdList(int numberOfId){
         return jdbc.query(
@@ -23,15 +25,12 @@ public class PassportJdbcDao {
                 numberOfId);
     }
 
-
-
-
     public void passportBatchCreate(List<Passport> passports){
         jdbc.batchUpdate("INSERT INTO passport " +
                 "(id, passport_number, issue_date, student_id) " +
                 "VALUES (?, ?, ?, ?)",
                 passports,
-                1000,
+                batchSize,
                 (ps, p) -> {
                     ps.setLong(1, p.getId());
                     ps.setString(2, p.getPassportNumber());
@@ -39,7 +38,4 @@ public class PassportJdbcDao {
                     ps.setLong(4, p.getStudent().getId());
                 });
     }
-
-
-
 }
