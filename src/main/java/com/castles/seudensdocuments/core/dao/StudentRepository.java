@@ -22,8 +22,8 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
             "WHERE (:name IS NULL OR LOWER(s.firstName) LIKE :name " +
             "OR LOWER(s.lastName) LIKE :name) " +
             "AND (:email is NULL OR LOWER(s.email) = :email) " +
-            "AND (:from IS NULL OR s.enrollmentDate >= :from) " +
-            "AND (:to IS NULL OR s.enrollmentDate <= :to)")
+            "AND (CAST(:from AS localdate) IS NULL OR s.enrollmentDate >= :from) " +
+            "AND (CAST(:to AS LOCALDATE) IS NULL OR s.enrollmentDate <= :to)")
     Page<Student> search(
             @Param("name") String name,
             @Param("email") String email,

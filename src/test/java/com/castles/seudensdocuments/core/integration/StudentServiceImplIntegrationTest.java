@@ -2,16 +2,19 @@ package com.castles.seudensdocuments.core.integration;
 
 
 import com.castles.seudensdocuments.core.dao.StudentRepository;
+import com.castles.seudensdocuments.core.dto.StudentPageResponse;
 import com.castles.seudensdocuments.core.dto.StudentRequestDto;
 import com.castles.seudensdocuments.core.dto.StudentResponseDto;
 import com.castles.seudensdocuments.core.mapper.StudentMapperImpl;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockMultipartFile;
@@ -365,6 +368,52 @@ public class StudentServiceImplIntegrationTest extends AbstractIntegrationTest{
         assertThat(response.getBody()).containsEntry("status", "Generated 100000 students");
         log.info("Генерация студентов заняла - {}мс", response.getBody().get("executionTimeMs"));
     }
+
+    //Поиск всех студентов без фильтров
+    @Test
+    @Tag("Pageable")
+    void getStudentsPageWithoutFilter() {
+        StudentPageResponse resp = studentService.findAll(null, null, null, null, PageRequest.of(0, 1));
+        assertThat(resp.getContent()).hasSize(1);
+        assertThat(resp.getTotalItems()).isEqualTo(1);
+        assertThat(resp.getContent().get(0).getEmail()).isEqualTo("test@example.com");
+    }
+    //Поиск всех студентов по name
+    @Test
+    @Tag("Pageable")
+    void getStudentsPageWithNameFilter(){
+        StudentPageResponse resp = studentService.findAll("ТЕСТ", null, null, null, PageRequest.of(0, 1));
+        assertThat(resp.getContent().get(0).getEmail()).isEqualTo("test@example.com");
+    }
+    //Поиск студента по email
+    @Test
+    @Tag("Pageable")
+    void getStudentsPageWithEmailFilter(){
+        StudentPageResponse resp = studentService.findAll(null, "test@example.com", null, null, PageRequest.of(0, 1));
+        assertThat(resp.getContent().get(0).getEmail()).isEqualTo("test@example.com");
+    }
+    //Поиск по дате from
+    @Test
+    @Tag("Pageable")
+    void getStudentsPageWithFromFilter(){
+        StudentPageResponse resp = studentService.findAll(null, null, LocalDate.now(), null, PageRequest.of(0, 1));
+        assertThat(resp.getContent().get(0).getEmail()).isEqualTo("test@example.com");
+    }
+    //Поиск по дате to
+    @Test
+    @Tag("Pageable")
+    void getStudentsPageWithToFilter(){
+        StudentPageResponse resp = studentService.findAll(null, null, null, LocalDate.now(), PageRequest.of(0, 1));
+        assertThat(resp.getContent().get(0).getEmail()).isEqualTo("test@example.com");
+    }
+    //Поиск по всем фильтрам
+    @Test
+    @Tag("Pageable")
+    void getStudentsPageWitAllFilters(){
+        StudentPageResponse resp = studentService.findAll("Тес", "test@example.com", LocalDate.now(), LocalDate.now(), PageRequest.of(0, 1));
+        assertThat(resp.getContent().get(0).getEmail()).isEqualTo("test@example.com");
+    }
+    //
 
 
 

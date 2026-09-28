@@ -343,7 +343,7 @@ public class StudentService {
         }
         String emailFilter = stringOrNull(email);
         if (emailFilter != null){
-            emailFilter = "%" + emailFilter.toLowerCase() + "%";
+            emailFilter = emailFilter.toLowerCase();
         }
 
         Page<Student> page = studentRepository.search(
