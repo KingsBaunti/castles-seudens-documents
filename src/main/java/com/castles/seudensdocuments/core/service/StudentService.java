@@ -1,8 +1,10 @@
 package com.castles.seudensdocuments.core.service;
 
 import com.castles.seudensdocuments.core.dao.*;
+import com.castles.seudensdocuments.core.dto.StudentPageResponse;
 import com.castles.seudensdocuments.core.dto.StudentRequestDto;
 import com.castles.seudensdocuments.core.dto.StudentResponseDto;
+import com.castles.seudensdocuments.core.dto.StudentResponseWithoutAvatar;
 import com.castles.seudensdocuments.core.mapper.PassportMapper;
 import com.castles.seudensdocuments.core.mapper.StudentMapper;
 import com.castles.seudensdocuments.core.mapper.TranscriptMapper;
@@ -15,6 +17,8 @@ import lombok.RequiredArgsConstructor;
 //import lombok.Value;
 import net.datafaker.Faker;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -24,6 +28,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.beans.factory.annotation.Value;
 
 import java.io.IOException;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -323,6 +328,36 @@ public class StudentService {
         }
 
 
+    }
+
+    @Transactional
+    public StudentPageResponse findAll(String name,
+                                       String email,
+                                       LocalDate from,
+                                       LocalDate to,
+                                       Pageable pageable)
+    {
+        String nameFilter = stringOrNull(name);
+        if (nameFilter != null){
+            nameFilter = "%" + nameFilter.toLowerCase() + "%";
+        }
+        String emailFilter = stringOrNull(email);
+        if (emailFilter != null){
+            emailFilter = emailFilter.toLowerCase();
+        }
+
+        Page<Student> page = studentRepository.search(
+                nameFilter, emailFilter, from, to, pageable
+        );
+
+        Page<StudentResponseWithoutAvatar> dtoPage = page.map(studentMapper::toResponseWithoutAvatarDTO);
+        return new StudentPageResponse(dtoPage.getContent(),
+                dtoPage.getNumber(),
+                dtoPage.getTotalPages(),
+                dtoPage.getTotalElements());
+    }
+    private String stringOrNull(String str){
+        return (str == null || str.isBlank()) ? null : str.trim();
     }
 
 }
