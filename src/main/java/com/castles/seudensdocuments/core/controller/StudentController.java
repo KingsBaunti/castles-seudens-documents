@@ -121,6 +121,32 @@ public class StudentController {
         }
 
     }
+    //Поиск с пагинацией и фильтрацией с использованием CriteriaAPI
+    @GetMapping("/criteria")
+    public StudentPageResponse getStudentWithCriteria(
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String email,
+            @RequestParam(required = false) LocalDate enrollmentDateFrom,
+            @RequestParam(required = false) LocalDate enrollmentDateTo,
+            @PageableDefault(size = 10, page = 0, sort = "id")Pageable pageable
+    ){
+
+        try {
+            //Если сортировка по имени, то заменяем её на фамилию
+            if(pageable.getSort().getOrderFor("name") != null){
+                Sort.Order order = pageable.getSort().getOrderFor("name");
+                pageable = PageRequest.of(
+                        pageable.getPageNumber(),
+                        pageable.getPageSize(),
+                        Sort.by(order.getDirection(), "firstName")
+                );
+            }
+
+            return studentService.findAllWithCriteria(name, email, enrollmentDateFrom, enrollmentDateTo, pageable);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 
 
 }
