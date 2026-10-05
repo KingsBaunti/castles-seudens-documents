@@ -29,7 +29,6 @@ import org.springframework.beans.factory.annotation.Value;
 
 import java.io.IOException;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -50,6 +49,7 @@ public class StudentService {
     private final StudentJdbcDao studentJdbcDao;
     private final PassportJdbcDao passportJdbcDao;
     private final TranscriptJdbcDao transcriptJdbcDao;
+    private final StudentCriteriaDao studentCriteriaDao;
 
     @Transactional
     public ResponseEntity<StudentResponseDto> createStudent(StudentRequestDto requestDto){
@@ -358,6 +358,20 @@ public class StudentService {
     }
     private String stringOrNull(String str){
         return (str == null || str.isBlank()) ? null : str.trim();
+    }
+
+    @Transactional
+    public StudentPageResponse findAllWithCriteria(String name,
+                                                   String email,
+                                                   LocalDate from,
+                                                   LocalDate to,
+                                                   Pageable pageable){
+        Page<Student> page = studentCriteriaDao.search(name, email, from, to, pageable);
+        Page<StudentResponseWithoutAvatar> dtoPage = page.map(studentMapper::toResponseWithoutAvatarDTO);
+        return new StudentPageResponse(dtoPage.getContent(),
+                dtoPage.getNumber(),
+                dtoPage.getTotalPages(),
+                dtoPage.getTotalElements());
     }
 
 }

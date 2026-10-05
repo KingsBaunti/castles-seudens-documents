@@ -413,7 +413,51 @@ public class StudentServiceImplIntegrationTest extends AbstractIntegrationTest{
         StudentPageResponse resp = studentService.findAll("Тес", "test@example.com", LocalDate.now(), LocalDate.now(), PageRequest.of(0, 1));
         assertThat(resp.getContent().get(0).getEmail()).isEqualTo("test@example.com");
     }
-    //
+    //Блок тестов для пагинации с использованием CriteriaAPI
+    //Поиск всех студентов без фильтров
+    @Test
+    @Tag("Pageable")
+    void getStudentsWithCriteriaPageWithoutFilter() {
+        StudentPageResponse resp = studentService.findAllWithCriteria(null, null, null, null, PageRequest.of(0, 1));
+        assertThat(resp.getContent()).hasSize(1);
+        assertThat(resp.getTotalItems()).isEqualTo(1);
+        assertThat(resp.getContent().get(0).getEmail()).isEqualTo("test@example.com");
+    }
+    //Поиск всех студентов по name
+    @Test
+    @Tag("Pageable")
+    void getStudentsWithCriteriaPageWithNameFilter(){
+        StudentPageResponse resp = studentService.findAllWithCriteria("ТЕСТ", null, null, null, PageRequest.of(0, 1));
+        assertThat(resp.getContent().get(0).getEmail()).isEqualTo("test@example.com");
+    }
+    //Поиск студента по email
+    @Test
+    @Tag("Pageable")
+    void getStudentsWithCriteriaPageWithEmailFilter(){
+        StudentPageResponse resp = studentService.findAllWithCriteria(null, "test@example.com", null, null, PageRequest.of(0, 1));
+        assertThat(resp.getContent().get(0).getEmail()).isEqualTo("test@example.com");
+    }
+    //Поиск по дате from
+    @Test
+    @Tag("Pageable")
+    void getStudentsWithCriteriaPageWithFromFilter(){
+        StudentPageResponse resp = studentService.findAllWithCriteria(null, null, LocalDate.now(), null, PageRequest.of(0, 1));
+        assertThat(resp.getContent().get(0).getEmail()).isEqualTo("test@example.com");
+    }
+    //Поиск по дате to
+    @Test
+    @Tag("Pageable")
+    void getStudentsWithCriteriaPageWithToFilter(){
+        StudentPageResponse resp = studentService.findAllWithCriteria(null, null, null, LocalDate.now(), PageRequest.of(0, 1));
+        assertThat(resp.getContent().get(0).getEmail()).isEqualTo("test@example.com");
+    }
+    //Поиск по всем фильтрам
+    @Test
+    @Tag("Pageable")
+    void getStudentsWithCriteriaPageWitAllFilters(){
+        StudentPageResponse resp = studentService.findAllWithCriteria("Тес", "test@example.com", LocalDate.now(), LocalDate.now(), PageRequest.of(0, 1));
+        assertThat(resp.getContent().get(0).getEmail()).isEqualTo("test@example.com");
+    }
 
 
 
