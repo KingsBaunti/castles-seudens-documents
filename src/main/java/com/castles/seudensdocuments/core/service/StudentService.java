@@ -19,6 +19,7 @@ import net.datafaker.Faker;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -372,6 +373,17 @@ public class StudentService {
                 dtoPage.getNumber(),
                 dtoPage.getTotalPages(),
                 dtoPage.getTotalElements());
+    }
+
+    @Transactional
+    public StudentPageResponse findAllWithSpec(Specification<Student> spec, Pageable pageable){
+        Page<Student> page = studentRepository.findAll(spec, pageable);
+        Page<StudentResponseWithoutAvatar> dtoPage = page.map(studentMapper::toResponseWithoutAvatarDTO);
+        return new StudentPageResponse(dtoPage.getContent(),
+                dtoPage.getNumber(),
+                dtoPage.getTotalPages(),
+                dtoPage.getTotalElements());
+
     }
 
 }
