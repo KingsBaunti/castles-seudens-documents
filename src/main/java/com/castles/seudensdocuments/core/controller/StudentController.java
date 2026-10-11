@@ -6,6 +6,7 @@ import com.castles.seudensdocuments.core.dto.StudentRequestDto;
 import com.castles.seudensdocuments.core.dto.StudentResponseDto;
 import com.castles.seudensdocuments.core.service.StudentService;
 
+import com.castles.seudensdocuments.core.spec.StudentFilterSpec;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -147,6 +148,30 @@ public class StudentController {
             throw new RuntimeException(e);
         }
     }
+    //Поиск с пагинацией и фильтрацией с использованием specification-arg-resolver
+    @GetMapping("/spec")
+    public StudentPageResponse getStudentWithSpec(
+            StudentFilterSpec spec,
+            @PageableDefault(size = 10, page = 0, sort = "id")Pageable pageable
+    ){
+
+        try {
+            //Если сортировка по имени, то заменяем её на фамилию
+            if(pageable.getSort().getOrderFor("name") != null){
+                Sort.Order order = pageable.getSort().getOrderFor("name");
+                pageable = PageRequest.of(
+                        pageable.getPageNumber(),
+                        pageable.getPageSize(),
+                        Sort.by(order.getDirection(), "firstName")
+                );
+            }
+
+            return studentService.findAllWithSpec(spec, pageable);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 
 
 }

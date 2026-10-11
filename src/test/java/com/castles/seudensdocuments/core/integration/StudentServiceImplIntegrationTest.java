@@ -6,8 +6,15 @@ import com.castles.seudensdocuments.core.dto.StudentPageResponse;
 import com.castles.seudensdocuments.core.dto.StudentRequestDto;
 import com.castles.seudensdocuments.core.dto.StudentResponseDto;
 import com.castles.seudensdocuments.core.mapper.StudentMapperImpl;
+import com.castles.seudensdocuments.core.model.Student;
+import com.castles.seudensdocuments.core.spec.StudentFilterSpec;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -15,6 +22,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockMultipartFile;
@@ -458,7 +468,79 @@ public class StudentServiceImplIntegrationTest extends AbstractIntegrationTest{
         StudentPageResponse resp = studentService.findAllWithCriteria("Тес", "test@example.com", LocalDate.now(), LocalDate.now(), PageRequest.of(0, 1));
         assertThat(resp.getContent().get(0).getEmail()).isEqualTo("test@example.com");
     }
+    //Блок тестов для пагинации с использованием specification-arg-resolver
+    //Поиск всех студентов без фильтров
+    @Test
+    @Tag("Pageable")
+    void getStudentsWithSpecPageWithoutFilter() {
+        StudentPageResponse resp = studentService.findAllWithSpec(null, PageRequest.of(0, 1));
+        assertThat(resp.getContent()).hasSize(1);
+        assertThat(resp.getTotalItems()).isEqualTo(1);
+        assertThat(resp.getContent().get(0).getEmail()).isEqualTo("test@example.com");
+    }
+    //Поиск всех студентов по name
+    @Test
+    @Tag("Pageable")
+    void getStudentsWithSpecPageWithNameFilter(){
 
+        Specification<Student> spec = (root, query, cb) -> cb.or(
+                cb.like(cb.lower(root.get("firstName")), "ТЕСТ"),
+                cb.like(cb.lower(root.get("lastName")), "ТЕСТ")
+        );
 
+        StudentPageResponse resp = studentService.findAllWithSpec(spec, PageRequest.of(0, 1));
+        assertThat(resp.getContent().get(0).getEmail()).isEqualTo("test@example.com");
+    }
+    //Поиск студента по email
+    @Test
+    @Tag("Pageable")
+    void getStudentsWithSpecPageWithEmailFilter(){
+
+        Specification<Student> spec = (root, query, cb) -> cb.equal(
+                cb.lower(root.get("email")), "test@example.com");
+
+        StudentPageResponse resp = studentService.findAllWithSpec(spec, PageRequest.of(0, 1));
+        assertThat(resp.getContent().get(0).getEmail()).isEqualTo("test@example.com");
+    }
+    //Поиск по дате from
+    @Test
+    @Tag("Pageable")
+    void getStudentsWithSpecPageWithFromFilter(){
+
+        Specification<Student> spec = (root, query, cb) ->
+                cb.greaterThanOrEqualTo(root.get("enrollmentDate"), LocalDate.now());
+
+        StudentPageResponse resp = studentService.findAllWithSpec(spec, PageRequest.of(0, 1));
+        assertThat(resp.getContent().get(0).getEmail()).isEqualTo("test@example.com");
+    }
+    //Поиск по дате to
+    @Test
+    @Tag("Pageable")
+    void getStudentsWithSpecPageWithToFilter(){
+
+        Specification<Student> spec = (root, query, cb) ->
+                cb.lessThanOrEqualTo(root.get("enrollmentDate"), LocalDate.now());
+
+        StudentPageResponse resp = studentService.findAllWithSpec(spec, PageRequest.of(0, 1));
+        assertThat(resp.getContent().get(0).getEmail()).isEqualTo("test@example.com");
+    }
+    //Поиск по всем фильтрам
+    @Test
+    @Tag("Pageable")
+    void getStudentsWithCSpecPageWitAllFilters(){
+
+        Specification<Student> spec = (root, query, cb) -> cb.and(
+            cb.or(
+                    cb.like(cb.lower(root.get("firstName")), "%тес%"),
+                    cb.like(cb.lower(root.get("lastName")), "%тес%")
+            ),
+            cb.equal(cb.lower(root.get("email")), "test@example.com"),
+            cb.greaterThanOrEqualTo(root.get("enrollmentDate"), LocalDate.now()),
+            cb.lessThanOrEqualTo(root.get("enrollmentDate"), LocalDate.now())
+        );
+
+        StudentPageResponse resp = studentService.findAllWithSpec(spec, PageRequest.of(0, 1));
+        assertThat(resp.getContent().get(0).getEmail()).isEqualTo("test@example.com");
+    }
 
 }
