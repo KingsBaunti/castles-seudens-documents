@@ -8,12 +8,16 @@ import com.castles.seudensdocuments.core.dto.StudentResponseDto;
 import com.castles.seudensdocuments.core.mapper.StudentMapperImpl;
 import com.castles.seudensdocuments.core.model.Student;
 import com.castles.seudensdocuments.core.spec.StudentFilterSpec;
+import com.lowagie.text.pdf.PdfReader;
+import com.lowagie.text.pdf.parser.PdfTextExtractor;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -28,6 +32,8 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockMultipartFile;
+
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.Base64;
@@ -542,5 +548,80 @@ public class StudentServiceImplIntegrationTest extends AbstractIntegrationTest{
         StudentPageResponse resp = studentService.findAllWithSpec(spec, PageRequest.of(0, 1));
         assertThat(resp.getContent().get(0).getEmail()).isEqualTo("test@example.com");
     }
+
+    //Проверка конвертации пагинации в Excel
+    @Test
+    @Tag("PageableExportToExcel")
+    void exportPageToExcel(){
+
+        Specification<Student> spec = (root, query, cb) -> cb.and(
+                cb.or(
+                        cb.like(cb.lower(root.get("firstName")), "%тес%"),
+                        cb.like(cb.lower(root.get("lastName")), "%тес%")
+                ),
+                cb.equal(cb.lower(root.get("email")), "test@example.com"),
+                cb.greaterThanOrEqualTo(root.get("enrollmentDate"), LocalDate.now()),
+                cb.lessThanOrEqualTo(root.get("enrollmentDate"), LocalDate.now())
+        );
+
+        ResponseEntity<byte[]> response = studentService.exportPageToExcel(spec, PageRequest.of(0,1));
+
+        byte[] body = response.getBody();
+        assertThat(body).isNotNull().isNotEmpty();
+
+        try (XSSFWorkbook workbook = new XSSFWorkbook(new ByteArrayInputStream(body))) {
+            var sheet = workbook.getSheetAt(0);
+            assertThat(sheet.getLastRowNum()).isEqualTo(1);
+            assertThat(sheet.getRow(1).getCell(2).getStringCellValue()).isEqualTo("test@example.com");
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+    //Проверка конвертации пагинации в PDF
+    @Test
+    @Tag("PageableExportToPdf")
+    void exportPageToPdf(){
+        Specification<Student> spec = (root, query, cb) -> cb.and(
+                cb.or(
+                        cb.like(cb.lower(root.get("firstName")), "%тес%"),
+                        cb.like(cb.lower(root.get("lastName")), "%тес%")
+                ),
+                cb.equal(cb.lower(root.get("email")), "test@example.com"),
+                cb.greaterThanOrEqualTo(root.get("enrollmentDate"), LocalDate.now()),
+                cb.lessThanOrEqualTo(root.get("enrollmentDate"), LocalDate.now())
+        );
+
+        ResponseEntity<byte[]> response = studentService.exportPageToPdf(spec, PageRequest.of(0,1));
+
+        byte[] body = response.getBody();
+        assertThat(body).isNotNull().isNotEmpty();
+
+        try(PdfReader reader = new PdfReader(body)){
+            assertThat(reader.getNumberOfPages()).isGreaterThanOrEqualTo(1);
+            StringBuilder text = new StringBuilder();
+
+            PdfTextExtractor extractor = new PdfTextExtractor(reader);
+
+            for(int i = 1; i <= reader.getNumberOfPages(); i++){
+                text.append(extractor.getTextFromPage(i));
+            }
+
+            String content = text.toString().replaceAll("\\s+", "").trim();
+
+            assertThat(content).contains("Отчётпостудентам");
+            assertThat(content).contains("Тестовый");
+            assertThat(content).contains("Пользователь");
+            assertThat(content).contains("test@example.com");
+            assertThat(content).contains("1234567890");
+        } catch (Exception e){
+            throw new RuntimeException(e);
+        }
+
+
+
+
+    }
+
+
 
 }
