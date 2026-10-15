@@ -7,23 +7,19 @@ import com.castles.seudensdocuments.core.dto.StudentResponseDto;
 import com.castles.seudensdocuments.core.service.StudentService;
 
 import com.castles.seudensdocuments.core.spec.StudentFilterSpec;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.time.LocalDate;
 import java.util.Map;
+
 
 @Slf4j
 @RestController
@@ -167,6 +163,54 @@ public class StudentController {
             }
 
             return studentService.findAllWithSpec(spec, pageable);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    //Выгрузка страниц со студентами в Excel
+    @GetMapping("/export-excel")
+    public ResponseEntity<byte[]> getStudentExcelWithSpec(
+            StudentFilterSpec spec,
+            @PageableDefault(size = 10, page = 0, sort = "id")Pageable pageable
+    ){
+
+        try {
+            //Если сортировка по имени, то заменяем её на фамилию
+            if(pageable.getSort().getOrderFor("name") != null){
+                Sort.Order order = pageable.getSort().getOrderFor("name");
+                pageable = PageRequest.of(
+                        pageable.getPageNumber(),
+                        pageable.getPageSize(),
+                        Sort.by(order.getDirection(), "firstName")
+                );
+            }
+
+            return studentService.exportPageToExcel(spec, pageable);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    //Выгрузка страниц со студентами в PDF
+    @GetMapping("/export-pdf")
+    public ResponseEntity<byte[]> getStudentPdfWithSpec(
+            StudentFilterSpec spec,
+            @PageableDefault(size = 10, page = 0, sort = "id")Pageable pageable
+    ){
+
+        try {
+            //Если сортировка по имени, то заменяем её на фамилию
+            if(pageable.getSort().getOrderFor("name") != null){
+                Sort.Order order = pageable.getSort().getOrderFor("name");
+                pageable = PageRequest.of(
+                        pageable.getPageNumber(),
+                        pageable.getPageSize(),
+                        Sort.by(order.getDirection(), "firstName")
+                );
+            }
+
+            return studentService.exportPageToPdf(spec, pageable);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

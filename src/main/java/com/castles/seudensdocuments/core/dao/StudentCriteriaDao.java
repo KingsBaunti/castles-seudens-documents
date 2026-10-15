@@ -6,6 +6,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
 import jakarta.persistence.criteria.*;
 import lombok.RequiredArgsConstructor;
+import net.kaczmarzyk.spring.data.jpa.web.annotation.JoinFetch;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -42,6 +43,9 @@ public class StudentCriteriaDao {
 
         CriteriaQuery<Student> query = cb.createQuery(Student.class);
         Root<Student> root = query.from(Student.class);
+        root.fetch("passport", JoinType.LEFT);
+        root.fetch("transcripts", JoinType.LEFT);
+
         Predicate[] predicates = buildPredicates(cb, root, name, email, from, to);
 
         query.select(root).where(predicates).orderBy(toOrders(cb, root, pageable.getSort()));

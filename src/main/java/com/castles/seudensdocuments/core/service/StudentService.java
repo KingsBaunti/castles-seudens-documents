@@ -11,11 +11,17 @@ import com.castles.seudensdocuments.core.mapper.TranscriptMapper;
 import com.castles.seudensdocuments.core.model.Passport;
 import com.castles.seudensdocuments.core.model.Student;
 import com.castles.seudensdocuments.core.model.Transcript;
+import com.lowagie.text.pdf.*;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 //import lombok.Value;
 import net.datafaker.Faker;
+import org.apache.commons.io.output.ByteArrayOutputStream;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -27,11 +33,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.beans.factory.annotation.Value;
+import com.lowagie.text.*;
 
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.*;
+import java.util.List;
 import java.util.stream.Collectors;
+
 
 @Service
 @RequiredArgsConstructor
@@ -386,4 +395,123 @@ public class StudentService {
 
     }
 
+    @Transactional
+    public ResponseEntity<byte[]> exportPageToExcel(Specification<Student> spec, Pageable pageable)
+    {
+
+        Page<Student> page = studentRepository.findAll(spec, pageable);
+        byte[] excelBytes = generateExcel(page.getContent().stream().toList());
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"students.xlsx\"")
+                .body(excelBytes);
+    }
+
+
+    private byte[] generateExcel(List<Student> students){
+        try(XSSFWorkbook workbook = new XSSFWorkbook();
+        ByteArrayOutputStream out = new ByteArrayOutputStream()){
+
+            Sheet sheet = workbook.createSheet("Студенты");
+
+            Row header = sheet.createRow(0);
+            String[] columns = {"ID", "ФИО", "Email", "Дата зачисления", "Номер паспорта", "Количество транскриптов"};
+            for(int i = 0; i < columns.length; i++){
+                Cell cell = header.createCell(i);
+                cell.setCellValue(columns[i]);
+            }
+
+
+            int studentRowIndex = 1;
+            for (Student s : students){
+                Row studentRow = sheet.createRow(studentRowIndex++);
+
+                studentRow.createCell(0).setCellValue(s.getId() != null ? s.getId() : 0);
+                studentRow.createCell(1).setCellValue(
+                        (s.getFirstName() != null ? s.getFirstName() : "") + " " +
+                        (s.getLastName() != null ? s.getLastName() : "")
+                );
+                studentRow.createCell(2).setCellValue(s.getEmail() != null ? s.getEmail() : "");
+                studentRow.createCell(3).setCellValue(s.getEnrollmentDate() != null ? s.getEnrollmentDate().toString() : "");
+                studentRow.createCell(4).setCellValue(s.getPassport() != null && s.getPassport().getPassportNumber() != null ?
+                        s.getPassport().getPassportNumber() : "");
+                studentRow.createCell(5).setCellValue(s.getTranscripts() != null ? s.getTranscripts().size() : 0);
+            }
+
+            for (int i = 0; i < columns.length; i++) {
+                sheet.autoSizeColumn(i);
+                //Не все столбцы достаточно широкие, вручную расширяем их
+                sheet.setColumnWidth(i, sheet.getColumnWidth(i) + 1024);
+            }
+
+            workbook.write(out);
+            return out.toByteArray();
+
+        }catch (IOException e){
+            throw new RuntimeException("Erore Excel students page generation", e);
+        }
+        }
+
+
+
+    @Transactional
+    public ResponseEntity<byte[]> exportPageToPdf(Specification<Student> spec, Pageable pageable)
+    {
+
+        Page<Student> page = studentRepository.findAll(spec, pageable);
+        byte[] pdfBytes = generatePdf(page.getContent().stream().toList());
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"students.pdf\"")
+                .body(pdfBytes);
+    }
+    private byte[] generatePdf(List<Student> students){
+
+        try(ByteArrayOutputStream out = new ByteArrayOutputStream()){
+            Document document = new Document(PageSize.A4);
+            PdfWriter.getInstance(document, out);
+            document.open();
+
+            //Заголовок
+            Font titleFont = new Font(Font.HELVETICA, 16, Font.BOLD);
+            Paragraph title = new Paragraph("Отчёт по студентам", titleFont);
+            title.setAlignment(Element.ALIGN_CENTER);
+            document.add(title);
+
+            //Таблица
+            PdfPTable table = new PdfPTable(6);
+
+            //Заголовки
+            Font headerFont = new Font(Font.HELVETICA, 14, Font.BOLD);
+            String [] headers = {"ID", "ФИО", "Email", "Дата зачисления", "Номер паспорта", "Количество транскриптов"};
+            for(String h : headers){
+                PdfPCell cell = new PdfPCell(new Phrase(h, headerFont));
+                table.addCell(cell);
+            }
+            table.setHeaderRows(1);
+
+            Font cellFont = new Font(Font.HELVETICA, 10);
+            for(Student s : students){
+                table.addCell(new Phrase(String.valueOf((s.getId() != null ? s.getId() : 0)), cellFont));
+                table.addCell(new Phrase((s.getFirstName() != null ? s.getFirstName() : "") + " " +
+                        (s.getLastName() != null ? s.getLastName() : ""), cellFont));
+                table.addCell(new Phrase(s.getEmail() != null ? s.getEmail() : "", cellFont));
+                table.addCell(new Phrase(s.getEnrollmentDate() != null ? s.getEnrollmentDate().toString() : "", cellFont));
+                table.addCell(new Phrase(s.getPassport() != null && s.getPassport().getPassportNumber() != null ?
+                        s.getPassport().getPassportNumber() : "", cellFont));
+                table.addCell(new Phrase(String.valueOf(s.getTranscripts() != null ? s.getTranscripts().size() : 0), cellFont));
+            }
+
+            document.add(table);
+            document.close();
+
+            return out.toByteArray();
+
+        }catch (Exception e){
+            throw new RuntimeException("Erore PDF students page generation", e);
+        }
+    }
 }
