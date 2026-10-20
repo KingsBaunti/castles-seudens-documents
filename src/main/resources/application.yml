@@ -56,4 +56,7 @@ logging:
     #Отображаем в логах ResultSet
     org.hibernate.orm.jdbc.extract: WARN
 
-#
+#Настройки импорта из CSV
+csv:
+  student:
+    dataStartRowInStudentCsv: 2

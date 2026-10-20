@@ -4,6 +4,7 @@ package com.castles.seudensdocuments.core.controller;
 import com.castles.seudensdocuments.core.dto.StudentPageResponse;
 import com.castles.seudensdocuments.core.dto.StudentRequestDto;
 import com.castles.seudensdocuments.core.dto.StudentResponseDto;
+import com.castles.seudensdocuments.core.dto.csv.CsvUploadResponse;
 import com.castles.seudensdocuments.core.service.StudentService;
 
 import com.castles.seudensdocuments.core.spec.StudentFilterSpec;
@@ -214,6 +215,15 @@ public class StudentController {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    //Импорт данных студентов из CSV файла
+    @PostMapping("/upload")
+    public ResponseEntity<CsvUploadResponse> uploadStudentsFromCsv(
+            @RequestParam("file") MultipartFile file
+    ){
+        CsvUploadResponse response = studentService.getStudentsFromCsv(file);
+        return ResponseEntity.ok(response);
     }
 
 

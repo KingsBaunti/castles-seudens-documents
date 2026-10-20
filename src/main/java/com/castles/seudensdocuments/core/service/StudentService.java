@@ -1,17 +1,20 @@
 package com.castles.seudensdocuments.core.service;
 
 import com.castles.seudensdocuments.core.dao.*;
-import com.castles.seudensdocuments.core.dto.StudentPageResponse;
-import com.castles.seudensdocuments.core.dto.StudentRequestDto;
-import com.castles.seudensdocuments.core.dto.StudentResponseDto;
-import com.castles.seudensdocuments.core.dto.StudentResponseWithoutAvatar;
+import com.castles.seudensdocuments.core.dto.*;
+import com.castles.seudensdocuments.core.dto.csv.CsvRowError;
+import com.castles.seudensdocuments.core.dto.csv.CsvUploadResponse;
+import com.castles.seudensdocuments.core.dto.csv.StudentCsvDto;
 import com.castles.seudensdocuments.core.mapper.PassportMapper;
 import com.castles.seudensdocuments.core.mapper.StudentMapper;
 import com.castles.seudensdocuments.core.mapper.TranscriptMapper;
+import com.castles.seudensdocuments.core.mapper.csv.StudentCsvMapper;
 import com.castles.seudensdocuments.core.model.Passport;
 import com.castles.seudensdocuments.core.model.Student;
 import com.castles.seudensdocuments.core.model.Transcript;
 import com.lowagie.text.pdf.*;
+import com.opencsv.bean.CsvToBean;
+import com.opencsv.bean.CsvToBeanBuilder;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +25,7 @@ import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -35,7 +39,11 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.beans.factory.annotation.Value;
 import com.lowagie.text.*;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.List;
@@ -52,9 +60,12 @@ public class StudentService {
     private final StudentMapper studentMapper;
     private final PassportMapper passportMapper;
     private final TranscriptMapper transcriptMapper;
+    private final StudentCsvMapper studentCsvMapper;
     private static final long MAX_AVATAR_SIZE = 5*1024*1024; //1024 байт = 1 КБ, 1024 КБ = 1 МБ
     @Value("${spring.jpa.properties.hibernate.jdbc.batch-size:100}")
     private int batchSize;
+    @Value("${csv.student.dataStartRowInStudentCsv:2}")
+    private int dataStartRowInStudentCsv;
 
     private final StudentJdbcDao studentJdbcDao;
     private final PassportJdbcDao passportJdbcDao;
@@ -513,5 +524,103 @@ public class StudentService {
         }catch (Exception e){
             throw new RuntimeException("Erore PDF students page generation", e);
         }
+    }
+
+
+    @Transactional
+    public CsvUploadResponse getStudentsFromCsv(MultipartFile csvFile){
+        if(csvFile == null || csvFile.isEmpty()){
+            throw new IllegalArgumentException("CSV file is empty");
+        }
+        List<CsvRowError> errors = new ArrayList<>();
+        List<Student> students = new ArrayList<>();
+        int rowNumber = dataStartRowInStudentCsv; // 1- заголовок, данные начинаются со вторйо строки
+
+        try(Reader reader = new BufferedReader(new InputStreamReader(csvFile.getInputStream(), StandardCharsets.UTF_8))){
+
+            CsvToBean<StudentCsvDto> csvToBean = new CsvToBeanBuilder<StudentCsvDto>(reader)
+                    .withType(StudentCsvDto.class)
+                    .withSeparator(';')
+                    .withIgnoreLeadingWhiteSpace(true)
+                    .withThrowExceptions(true)
+                    .build();
+
+            List<StudentCsvDto> parsedStudents = csvToBean.parse();
+
+            //Построчная обработка
+            for(StudentCsvDto dto : parsedStudents){
+
+                //Валидация строк
+                List<String> rowErrors = validateCsvStudentRow(dto);
+                if(!rowErrors.isEmpty()){
+                    for(String msg : rowErrors){
+                        errors.add(new CsvRowError(rowNumber, msg));
+                    }
+                    rowNumber++;
+                    continue;
+                }
+
+                //Маппинг из DTO в Entity
+                try{
+                    Student student = studentCsvMapper.toEntity(dto);
+                    students.add(student);
+                } catch(Exception e){
+                    errors.add(new CsvRowError(rowNumber, "Ошибка преобразования: " + e.getMessage()));
+                }
+
+                if(!csvToBean.getCapturedExceptions().isEmpty()){
+                    for(var ex : csvToBean.getCapturedExceptions()){
+                        errors.add(new CsvRowError((int)ex.getLineNumber(), ex.getMessage()));
+                    }
+                }
+
+
+
+                rowNumber++;
+            }
+
+        } catch(Exception e){
+            errors.add(new CsvRowError(rowNumber, "Ошибка преобразования: " + e.getMessage()));
+        }
+
+        //Сохраняем валидных студентов
+        if(!students.isEmpty()){
+            studentRepository.saveAll(students);
+        }
+
+        return new CsvUploadResponse(students.size(), errors);
+
+    }
+
+    private List<String> validateCsvStudentRow(StudentCsvDto dto){
+        List<String> errors = new ArrayList<>();
+
+        if(dto.getName() == null || dto.getName().isBlank()){
+            errors.add("Name is null or empty");
+        }else if(dto.getName().trim().split("\\s+").length < 2){
+            errors.add("Need first name and last name");
+        }
+
+        if(dto.getEmail() == null || !dto.getEmail().matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$")){
+            errors.add("Invalid email format: '" + dto.getEmail() + "'");
+        }
+
+        if(dto.getEnrollmentDate() == null){
+            errors.add("Need enrollment date");
+        }else if(dto.getEnrollmentDate().isAfter(LocalDate.now())){
+            errors.add("Enrollment date from future");
+        }
+
+        if(dto.getPassportNumber() == null || dto.getPassportNumber().isBlank()){
+            errors.add("Passport number is empty");
+        }
+
+        if(dto.getPassportIssueDate() == null){
+            errors.add("Passport Issue Date is Empty");
+        }else if(dto.getPassportIssueDate().isAfter(LocalDate.now())) {
+            errors.add("Passport Issue Date from future");
+        }
+
+        return errors;
     }
 }
