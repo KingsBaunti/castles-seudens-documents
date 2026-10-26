@@ -5,6 +5,8 @@ import com.castles.seudensdocuments.core.dao.StudentRepository;
 import com.castles.seudensdocuments.core.dto.StudentPageResponse;
 import com.castles.seudensdocuments.core.dto.StudentRequestDto;
 import com.castles.seudensdocuments.core.dto.StudentResponseDto;
+import com.castles.seudensdocuments.core.dto.csv.CsvRowError;
+import com.castles.seudensdocuments.core.dto.csv.CsvUploadResponse;
 import com.castles.seudensdocuments.core.mapper.StudentMapperImpl;
 import com.castles.seudensdocuments.core.model.Student;
 import com.castles.seudensdocuments.core.spec.StudentFilterSpec;
@@ -622,6 +624,84 @@ public class StudentServiceImplIntegrationTest extends AbstractIntegrationTest{
 
     }
 
+    //Тесты импорта из CSV файлов
+    //Успешный импорт
+    @Test
+    @Tag("ImportFromCsv")
+    void succesImportFromCsv(){
+
+        //Файл с данными
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "students.csv",
+                "text/csv",
+                """
+                name;email;enrollmentDate;passportNumber;passportIssueDate
+                Ivan Petrov;ivan.petrov@example.com;01.09.2023;4511789012;20.11.2019
+                Anna Sidorova;anna.sidorova@example.com;01.09.2023;4511789013;15.02.2020
+                """.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+        //Очищаем БД от дефолтного студента
+        studentRepository.deleteAll();
+
+        CsvUploadResponse response = studentService.getStudentsFromCsv(file);
+
+        assertThat(response.getErrors()).isEmpty();
+        assertThat(response.getSuccessCount()).isEqualTo(2);
+        assertThat(studentRepository.count()).isEqualTo(2L);
+
+    }
+    //Импорт невалидных значений
+    @Test
+    @Tag("ImportFromCsv")
+    void invalidImportFromCsv(){
+
+        /*
+        2 - пустое имя
+        3 - Одно слово в имени
+        4 - невалидный емайл
+        5 - дата зачисления из будущего
+        6 - пустой номер паспорта
+        7 - дата выдачи паспорта из будущего
+        */
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "students-invalid.csv",
+                "text/csv",
+                """
+                name;email;enrollmentDate;passportNumber;passportIssueDate
+                ;ivan.petrov@example.com;01.09.2023;4511789012;20.11.2019
+                OnlyFirst;anna@example.com;01.09.2023;4511789013;15.02.2020
+                Petr Sidorov;not-an-email;01.09.2023;4511789014;10.03.2018
+                Maria Ivanova;maria@example.com;01.01.2099;4511789015;12.04.2017
+                Alex Smirnov;alex@example.com;01.09.2023;;05.05.2016
+                Olga Kuznetsova;olga@example.com;01.09.2023;4511789016;01.01.2099
+                """.getBytes(java.nio.charset.StandardCharsets.UTF_8)
+        );
+
+        studentRepository.deleteAll();
+
+        CsvUploadResponse response = studentService.getStudentsFromCsv(file);
+
+        assertThat(response.getSuccessCount()).isEqualTo(0);
+        assertThat(studentRepository.count()).isEqualTo(0L);
+        assertThat(response.getErrors())
+                .extracting(CsvRowError::getMessage)
+                .contains(
+                        "Name is null or empty",
+                        "Need first name and last name",
+                        "Invalid email format: 'not-an-email'",
+                        "Enrollment date from future",
+                        "Passport number is empty",
+                        "Passport Issue Date from future"
+                );
+        assertThat(response.getErrors())
+                .extracting(CsvRowError::getRowNumber)
+                .containsExactlyInAnyOrder(2, 3, 4, 5, 6, 7);
+
+
+
+    }
 
 
 }

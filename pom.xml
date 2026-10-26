@@ -242,7 +242,17 @@
             <artifactId>commons-compress</artifactId>
             <version>1.25.0</version>
         </dependency>
+
+        <!-- OpenCVS для работы с CVS файлами -->
+        <dependency>
+            <groupId>com.opencsv</groupId>
+            <artifactId>opencsv</artifactId>
+            <version>5.12.0</version>
+        </dependency>
     </dependencies>
+
+
+    
 
     <build>
         <plugins>

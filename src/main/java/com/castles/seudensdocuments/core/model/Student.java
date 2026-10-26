@@ -1,19 +1,19 @@
 package com.castles.seudensdocuments.core.model;
 
 
+
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.JdbcType;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+
 
 import java.time.LocalDate;
 import java.util.List;
 
-//import static sun.security.ec.ECOperations.Secp256R1GeneratorMontgomeryMultiplier.generator; ???????
 
 @Entity
 @Getter
@@ -26,6 +26,7 @@ public class Student {
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "student_generator")
     @SequenceGenerator(sequenceName = "student_sequence", name = "student_generator", allocationSize = 50)
     Long id;
+
 
     String firstName;
 
